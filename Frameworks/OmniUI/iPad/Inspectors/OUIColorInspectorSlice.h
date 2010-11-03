@@ -42,9 +42,6 @@
 
 @class OUIInspectorSegmentedControl, OUIColorPicker;
 
-// posts a change whenevrer the colorTypeSegmentedControl is changed via the UI
-#define OUIColorTypeChangeNotification @"OUIColorTypeChangeNotification" 
-
 @interface OUIColorInspectorDetailSlice : OUIInspectorDetailSlice
 {
 @private
@@ -55,8 +52,6 @@
     OUIColorPicker *_hsvColorPicker;
     OUIColorPicker *_rgbColorPicker;
     OUIColorPicker *_grayColorPicker;
-    
-    NSUInteger _colorTypeIndex;
 }
 
 @property(retain,nonatomic) IBOutlet OUIInspectorSegmentedControl *colorTypeSegmentedControl;

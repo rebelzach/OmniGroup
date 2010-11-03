@@ -49,7 +49,6 @@
 
 + (void)setDynamicMenuPlaceholder:(NSMenuItem *)placeholder;
 + (NSArray *)groups;
-+ (NSUInteger)groupCount;
 + (NSArray *)visibleGroups;
 + (NSArray *)visibleWindows;
 + (void)forceAllGroupsToCheckScreenGeometry;

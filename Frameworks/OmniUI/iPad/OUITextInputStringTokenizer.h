@@ -10,9 +10,5 @@
 #import <UIKit/UITextInput.h>
 
 @interface OUITextInputStringTokenizer : UITextInputStringTokenizer
-{
-    UIResponder <UITextInput> *_nonretainedTextInput;
-}
-
 @end
 

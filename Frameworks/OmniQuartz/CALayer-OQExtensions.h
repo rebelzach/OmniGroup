@@ -37,7 +37,6 @@
 #if !defined(TARGET_OS_IPHONE) || !TARGET_OS_IPHONE
 - (void)renderInContextIgnoringCache:(CGContextRef)ctx;
 - (void)renderInContextIgnoringCache:(CGContextRef)ctx useAnimatedValues:(BOOL)useAnimatedValues;
-- (void)renderInContextIgnoringHiddenIgnoringCache:(CGContextRef)ctx useAnimatedValues:(BOOL)useAnimatedValues;
 - (NSImage *)imageForRect:(NSRect)rect useAnimatedValues:(BOOL)useAnimatedValues;
 - (void)writeImagesAndOpen;
 #endif

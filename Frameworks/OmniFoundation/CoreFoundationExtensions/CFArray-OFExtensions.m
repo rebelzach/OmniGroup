@@ -9,18 +9,17 @@
 
 #import <OmniFoundation/OFCFCallbacks.h>
 #import <OmniBase/rcsid.h>
-#import <Foundation/NSZone.h> // NSMakeCollectable
 
 RCS_ID("$Id$");
 
 NSMutableArray *OFCreateNonOwnedPointerArray(void)
 {
-    return NSMakeCollectable(CFArrayCreateMutable(kCFAllocatorDefault, 0, &OFNonOwnedPointerArrayCallbacks));
+    return (NSMutableArray *)CFArrayCreateMutable(kCFAllocatorDefault, 0, &OFNonOwnedPointerArrayCallbacks);
 }
 
 NSMutableArray *OFCreateIntegerArray(void)
 {
-    return NSMakeCollectable(CFArrayCreateMutable(kCFAllocatorDefault, 0, &OFIntegerArrayCallbacks));
+    return (NSMutableArray *)CFArrayCreateMutable(kCFAllocatorDefault, 0, &OFIntegerArrayCallbacks);
 }
 
 Boolean OFCFArrayIsSortedAscendingUsingFunction(CFArrayRef self, CFComparatorFunction comparator, void *context)

@@ -9,18 +9,17 @@
 
 #import <CoreFoundation/CFData.h>
 #import <CoreFoundation/CFError.h>
-#import <OmniBase/objc.h>
 
 // Compression
 extern Boolean OFDataMightBeCompressed(CFDataRef data);
-extern CFDataRef OFDataCreateCompressedData(CFDataRef data, CFErrorRef *outError) CF_RETURNS_RETAINED;
-extern CFDataRef OFDataCreateDecompressedData(CFAllocatorRef decompressedDataAllocator, CFDataRef data, CFErrorRef *outError) CF_RETURNS_RETAINED;
+extern CFDataRef OFDataCreateCompressedData(CFDataRef data, CFErrorRef *outError);
+extern CFDataRef OFDataCreateDecompressedData(CFAllocatorRef decompressedDataAllocator, CFDataRef data, CFErrorRef *outError);
 
 // Specific algorithms
 #if !defined(TARGET_OS_IPHONE) || !TARGET_OS_IPHONE
-extern CFDataRef OFDataCreateCompressedBzip2Data(CFDataRef data, CFErrorRef *outError) CF_RETURNS_RETAINED;
-extern CFDataRef OFDataCreateDecompressedBzip2Data(CFAllocatorRef decompressedDataAllocator, CFDataRef data, CFErrorRef *outError) CF_RETURNS_RETAINED;
+extern CFDataRef OFDataCreateCompressedBzip2Data(CFDataRef data, CFErrorRef *outError);
+extern CFDataRef OFDataCreateDecompressedBzip2Data(CFAllocatorRef decompressedDataAllocator, CFDataRef data, CFErrorRef *outError);
 #endif
 
-extern CFDataRef OFDataCreateCompressedGzipData(CFDataRef data, Boolean includeHeader, int level, CFErrorRef *outError) CF_RETURNS_RETAINED;
-extern CFDataRef OFDataCreateDecompressedGzip2Data(CFAllocatorRef decompressedDataAllocator, CFDataRef data, CFErrorRef *outError) CF_RETURNS_RETAINED;
+extern CFDataRef OFDataCreateCompressedGzipData(CFDataRef data, Boolean includeHeader, int level, CFErrorRef *outError);
+extern CFDataRef OFDataCreateDecompressedGzip2Data(CFAllocatorRef decompressedDataAllocator, CFDataRef data, CFErrorRef *outError);

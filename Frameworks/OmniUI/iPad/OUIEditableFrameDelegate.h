@@ -17,6 +17,5 @@
 - (void)textViewLayoutChanged:(OUIEditableFrame *)textView;
 - (void)textViewDidEndEditing:(OUIEditableFrame *)textView;
 
-- (BOOL)textViewCanShowContextMenu:(OUIEditableFrame *)textView;
 @end
 

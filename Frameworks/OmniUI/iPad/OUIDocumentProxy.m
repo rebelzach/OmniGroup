@@ -126,12 +126,6 @@ static OFPreference *ProxyAspectRatioCachePreference;
 }
 
 @synthesize url = _url;
-
-- (NSData *)emailData;
-{
-    return [NSData dataWithContentsOfURL:self.url];
-}
-
 @synthesize date = _date;
 @synthesize target = _target;
 @synthesize action = _action;

@@ -14,13 +14,6 @@
 
 RCS_ID("$Id$");
 
-#ifdef OMNI_ASSERTIONS_ON
-OBDEPRECATED_METHODS(OFBindingSourceObject)
-- (NSString *)humanReadableDescriptionForKey:(NSString *)key; // Use the key path variant
-- (NSString *)shortHumanReadableDescriptionForKey:(NSString *)key;
-@end
-#endif
-
 BOOL OFBindingPointsEqual(OFBindingPoint a, OFBindingPoint b)
 {
     // Requires identical objects, not -isEqual:!

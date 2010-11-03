@@ -19,9 +19,6 @@ RCS_ID("$Id$");
     #define TOOLBAR_DEBUG(format, ...)
 #endif
 
-@interface OUIToolbarViewControllerToolbar : UIToolbar
-@end
-
 @interface OUIToolbarViewController (/*Private*/)
 - (void)_prepareViewControllerForContainment:(UIViewController *)soonToBeInnerViewController hidden:(BOOL)hidden;
 - (void)_animationDidStop:(NSString *)animationID finished:(NSNumber *)finished context:(void *)context;
@@ -405,7 +402,7 @@ NSString * const OUIToolbarViewControllerResizedForKeyboard = @"OUIToolbarViewCo
     
     [view setAutoresizingMask:UIViewAutoresizingFlexibleWidth|UIViewAutoresizingFlexibleHeight];
 
-    _toolbar = [[OUIToolbarViewControllerToolbar alloc] initWithFrame:CGRectMake(0, 0, kStartingSize, kToolbarHeight)];
+    _toolbar = [[UIToolbar alloc] initWithFrame:CGRectMake(0, 0, kStartingSize, kToolbarHeight)];
     _toolbar.barStyle = UIBarStyleBlack;
     [_toolbar setAutoresizingMask:UIViewAutoresizingFlexibleWidth|UIViewAutoresizingFlexibleBottomMargin];
 
@@ -458,43 +455,7 @@ NSString * const OUIToolbarViewControllerResizedForKeyboard = @"OUIToolbarViewCo
     [_innerViewController didRotateFromInterfaceOrientation:fromInterfaceOrientation];
 }
 
-#pragma mark -
-#pragma mark UIResponder subclass
-
-- (NSUndoManager *)undoManager;
-{
-    // By default, if you send -undoManager to a view, it'll go up the responder chain and if it doesn't find one, UIWindow will create one.
-    // We want to ensure that we don't get an implicitly created undo manager (OUIDocument/OUISingleDocumentAppController have other assertions to make sure that only the document's undo manager is used).
-    OBASSERT_NOT_REACHED("This is probably not the -undoManager you want");
-    return nil;
-}
-
 @end
-
-@implementation OUIToolbarViewControllerToolbar
-
-// Allow items on the main toolbar to find the inner toolbar controller. UIKit's notion of responder chain starts with the receiving control, NOT the containing window's first responder. Our embedding of one UIViewController inside another means that the inner view controller couldn't easily get toolbar actions. This avoids having to write patches from AppController subclasses.
-- (UIResponder *)nextResponder;
-{
-    UIView *backgroundView = (UIView *)[super nextResponder];
-    OUIToolbarViewController *controller = (OUIToolbarViewController *)[backgroundView nextResponder];
-    
-    OBASSERT([controller isKindOfClass:[OUIToolbarViewController class]]);
-    OBASSERT(controller.view == backgroundView);
-
-    // If we have an inner view controller, go to it and skip the background view and the OUIToolbarViewController. They'll get hit after the view of the inner view controller.
-    UIViewController *innerViewController = controller.innerViewController;
-    if (innerViewController) {
-        OBASSERT([innerViewController nextResponder] == [innerViewController.view superview]);
-        OBASSERT([[innerViewController nextResponder] nextResponder] == backgroundView);
-        return innerViewController;
-    }
-    
-    return backgroundView; // normal next responder
-}
-
-@end
-
 
 @implementation UIViewController (OUIToolbarViewControllerExtensions)
 - (UIView *)prepareToResignInnerToolbarControllerAndReturnParentViewForActivityIndicator:(OUIToolbarViewController *)toolbarViewController;

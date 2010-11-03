@@ -346,13 +346,6 @@ static BOOL animateInspectorToggles;
     }
 }
 
-- (void)inspectorDidResize:(OIInspector *)resizedInspector;
-{
-    if (inspector != resizedInspector) {
-        [inspector inspectorDidResize:resizedInspector];
-    }
-}
-
 - (NSMutableDictionary *)debugDictionary;
 {
     NSMutableDictionary *result = [super debugDictionary];

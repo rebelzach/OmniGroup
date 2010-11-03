@@ -9,9 +9,7 @@
 
 #import <UIKit/UIViewController.h>
 
-#define OUI_SNAP_TO_ZOOM_PERCENT (0.1)
-
-@class OUIScalingScrollView, OUIOverlayView;
+@class OUIScalingScrollView;
 @protocol UIScrollViewDelegate;
 
 @interface OUIScalingViewController : UIViewController <UIScrollViewDelegate>
@@ -19,14 +17,12 @@
 @private
     OUIScalingScrollView *_scrollView;
     BOOL _isZooming;
-    BOOL _lastScaleWasFullScale;
 }
 
 @property(nonatomic,retain) IBOutlet UIScrollView *scrollView;
 
 // UIScrollViewDelegate methods that we implement, so subclasses can know whether to call super
 - (void)scrollViewDidScroll:(UIScrollView *)scrollView;
-- (void)scrollViewDidEndDragging:(UIScrollView *)scrollView willDecelerate:(BOOL)decelerate;
 - (void)scrollViewDidEndDecelerating:(UIScrollView *)scrollView;
 - (void)scrollViewWillBeginZooming:(UIScrollView *)scrollView withView:(UIView *)view;
 - (void)scrollViewDidZoom:(UIScrollView *)scrollView;

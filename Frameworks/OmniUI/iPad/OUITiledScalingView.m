@@ -106,8 +106,6 @@ static void OUITileViewWithRegularSquareTiles(OUITiledScalingView *self, NSMutab
     CGRect visibleRect = CGRectIntersection([scrollView convertRect:scrollView.bounds toView:self], bounds);
     
     DEBUG_TILE_LAYOUT(@"Tiling visible %@ with bounds %@", NSStringFromCGRect(visibleRect), NSStringFromCGRect(bounds));
-    if (visibleRect.size.width <= 0 || visibleRect.size.height <= 0)
-        return;
     
     OBASSERT(CGRectEqualToRect(bounds, CGRectIntegral(bounds)));
     
@@ -196,7 +194,7 @@ static void OUITileViewWithRegularSquareTiles(OUITiledScalingView *self, NSMutab
     
     // Finally, hide any remaining tiles that didn't get reused.
     for (OUIScalingViewTile *tile in availableTiles) {
-        DEBUG_TILE_LAYOUT(@"  Hiding unused tile %@", [tile shortDescription]);
+        DEBUG_TILE_LAYOUT(@"  Hidding unused tile %@", [tile shortDescription]);
         tile.hidden = YES;
     }
     

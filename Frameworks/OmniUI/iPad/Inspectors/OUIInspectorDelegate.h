@@ -15,8 +15,4 @@
 @protocol OUIInspectorDelegate <NSObject>
 - (NSString *)inspectorTitle:(OUIInspector *)inspector;
 - (NSArray *)inspectorSlices:(OUIInspector *)inspector;
-
-/* Delegates should normally implement this method to restore the first responder. */
-- (void)inspectorDidDismiss:(OUIInspector *)inspector;
-
 @end

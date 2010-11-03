@@ -9,26 +9,12 @@
 
 RCS_ID("$Id$")
 
-CGImageRef OQCreateVerticalGradientImage(CGGradientRef gradient, CFStringRef colorSpaceName, size_t height, BOOL opaque, BOOL flip)
+CGImageRef OQCreateVerticalGradientImage(CGGradientRef gradient, CFStringRef colorSpaceName, size_t height, BOOL flip)
 {
     size_t width = 1;
+    size_t bytesPerRow = 4*width;
     CGColorSpaceRef colorSpace = CGColorSpaceCreateWithName(colorSpaceName);
-    
-    size_t componentCount = CGColorSpaceGetNumberOfComponents(colorSpace);
-    CGImageAlphaInfo alphaInfo;
-    
-    if (opaque) {
-        alphaInfo = kCGImageAlphaNone;
-    } else {
-        // gray+alpha isn't supported, but alpha-only is (seem to be {black,alpha}). Unclear if you can make it {white,alpha} or any generic color).  Sadly, at least in some cases alpha-only seems to have some weird issues (see OQHoleLayer). So, upsample to RGBA.
-        CGColorSpaceRelease(colorSpace);
-        colorSpace = CGColorSpaceCreateWithName(kCGColorSpaceGenericRGB);
-        componentCount = 4;
-        alphaInfo = kCGImageAlphaPremultipliedFirst;
-    }
-    
-    size_t bytesPerRow = componentCount * width;
-    CGContextRef ctx = CGBitmapContextCreate(NULL, width, height, 8/*bitsPerComponent*/, bytesPerRow, colorSpace, alphaInfo);
+    CGContextRef ctx = CGBitmapContextCreate(NULL, width, height, 8/*bitsPerComponent*/, bytesPerRow, colorSpace, kCGImageAlphaPremultipliedFirst);
     CFRelease(colorSpace);
     
     CGRect bounds = CGRectMake(0, 0, width, height);

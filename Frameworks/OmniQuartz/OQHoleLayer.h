@@ -15,17 +15,10 @@
 {
     CGGradientRef _gradient;
     NSUInteger _shadowEdgeMask; // one bit set for each of the min/max x/y edge constants for the edges that should have shadows.
-    
-    CGSize _shadowImageSize;
-    CGImageRef _shadowImage;
-    
-    CALayer *_minXEdge, *_maxXEdge;
-    CALayer *_minYEdge, *_maxYEdge;
 }
 
 - initWithGradientExtent:(OFExtent)gradientExtent shadowEdgeMask:(NSUInteger)shadowEdgeMask;
 
-- (void)exposeByExpandingFromRect:(CGRect)originalRect toRect:(CGRect)finalRect inLayer:(CALayer *)parentLayer;
-- (void)removeAfterShrinkingToRect:(CGRect)finalRect;
+- (void)removeFromSuperlayerAtEndOfAnimation;
 
 @end

@@ -61,17 +61,6 @@ static inline int unicharDigitValue(unichar c)
     [super dealloc];
 }
 
-- (void)finalize
-{
-    // TODO: Can we get rid of this finalize method?
-    // The case conversion buffer holds a CF-retained string, but it could be rewritten not to, and then we could get rid of this method.
-    if (freeInputBuffer) {
-        OBASSERT(inputBuffer != NULL);
-        NSZoneFree(NULL, inputBuffer);
-    }
-    OFCaseConversionBufferDestroy(&caseBuffer);
-    [super finalize];
-}
 
 // Declared methods
 
@@ -394,16 +383,12 @@ readRetainedTokenFragmentWithDelimiterOFCharacterSet(OFCharacterScanner *self, O
     NSUInteger length = self->scanLocation - startLocation;
     if (length == 0)
         return nil;
-    
-    CFStringRef tokenFragment;
-    
+        
     if (forceLowercase) {
-        tokenFragment = OFCreateStringByLowercasingCharacters(&self->caseBuffer, startLocation, length);
+        return (NSString *)OFCreateStringByLowercasingCharacters(&self->caseBuffer, startLocation, length);
     } else {
-        tokenFragment = CFStringCreateWithCharacters(kCFAllocatorDefault, startLocation, length);
+        return (NSString *)CFStringCreateWithCharacters(kCFAllocatorDefault, startLocation, length);
     }
-    
-    return NSMakeCollectable(tokenFragment);
 }
 
 - (NSString *)readTokenFragmentWithDelimiterOFCharacterSet:(OFCharacterSet *)delimiterOFCharacterSet;

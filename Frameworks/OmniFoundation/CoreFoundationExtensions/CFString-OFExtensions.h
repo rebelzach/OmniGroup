@@ -8,7 +8,6 @@
 // $Id$
 
 #import <CoreFoundation/CFString.h>
-#import <OmniBase/objc.h>
 
 typedef struct _OFCaseConversionBuffer {
     __strong CFMutableStringRef string;
@@ -19,7 +18,7 @@ typedef struct _OFCaseConversionBuffer {
 extern void OFCaseConversionBufferInit(OFCaseConversionBuffer *caseBuffer);
 extern void OFCaseConversionBufferDestroy(OFCaseConversionBuffer *caseBuffer);
 
-extern CFStringRef OFCreateStringByLowercasingCharacters(OFCaseConversionBuffer *caseBuffer, const UniChar *characters, CFIndex count) CF_RETURNS_RETAINED;
+extern CFStringRef OFCreateStringByLowercasingCharacters(OFCaseConversionBuffer *caseBuffer, const UniChar *characters, CFIndex count);
 extern CFHashCode OFCaseInsensitiveHash(const UniChar *characters, CFIndex length);
 
 // Case-insensitve comparison and hash suitable for collection callbacks

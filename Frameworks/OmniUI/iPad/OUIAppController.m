@@ -18,8 +18,6 @@
 #import <MessageUI/MFMailComposeViewController.h>
 #import <OmniFoundation/NSString-OFURLEncoding.h>
 
-#import <SenTestingKit/SenTestSuite.h>
-
 RCS_ID("$Id$");
 
 @interface OUIAppController (/*Private*/)
@@ -67,7 +65,7 @@ BOOL OUIShouldLogPerformanceMetrics;
     [self presentError:error file:NULL line:0];
 }
 
-+ (void)_presentError:(NSError *)error file:(const char *)file line:(int)line cancelButtonTitle:(NSString *)cancelButtonTitle;
++ (void)presentError:(NSError *)error file:(const char *)file line:(int)line;
 {
     if (error == nil || [error causedByUserCancelling])
         return;
@@ -76,19 +74,10 @@ BOOL OUIShouldLogPerformanceMetrics;
         NSLog(@"Error source file:%s line:%d", file, line);
     NSLog(@"%@", [error toPropertyList]);
     
-    UIAlertView *alert = [[[UIAlertView alloc] initWithTitle:[error localizedDescription] message:[error localizedRecoverySuggestion] delegate:self cancelButtonTitle:cancelButtonTitle otherButtonTitles:nil] autorelease];
+    UIAlertView *alert = [[[UIAlertView alloc] initWithTitle:[error localizedDescription] message:[error localizedRecoverySuggestion] delegate:self cancelButtonTitle:NSLocalizedStringFromTableInBundle(@"Cancel", @"OmniUI", OMNI_BUNDLE, @"button title") otherButtonTitles:nil] autorelease];
     [alert show];
 }
 
-+ (void)presentError:(NSError *)error file:(const char *)file line:(int)line;
-{
-    [self _presentError:error file:file line:line cancelButtonTitle:NSLocalizedStringFromTableInBundle(@"Cancel", @"OmniUI", OMNI_BUNDLE, @"button title")];
-}
-
-+ (void)presentAlert:(NSError *)error file:(const char *)file line:(int)line;
-{
-    [self _presentError:error file:file line:line cancelButtonTitle:NSLocalizedStringFromTableInBundle(@"OK", @"OmniUI", OMNI_BUNDLE, @"button title")];
-}
 
 - (void)dealloc;
 {
@@ -271,22 +260,12 @@ BOOL OUIShouldLogPerformanceMetrics;
     NSString *helpBookFolder = [[NSBundle mainBundle] objectForInfoDictionaryKey:@"OUIHelpBookFolder"];
     NSString *helpBookName = [[NSBundle mainBundle] objectForInfoDictionaryKey:@"OUIHelpBookName"];
     OBASSERT(helpBookName != nil);
-    NSString *webViewTitle = [[NSBundle mainBundle] localizedStringForKey:@"OUIHelpBookName" value:helpBookName table:@"InfoPlist"];
 
     NSString *indexPath = [[NSBundle mainBundle] pathForResource:@"index" ofType:@"html" inDirectory:helpBookFolder];
     if (indexPath == nil)
         indexPath = [[NSBundle mainBundle] pathForResource:@"top" ofType:@"html" inDirectory:helpBookFolder];
     OBASSERT(indexPath != nil);
-    [self _showWebViewWithPath:indexPath title:webViewTitle];
-}
-
-- (void)runTests:(id)sender;
-{
-    Class cls = NSClassFromString(@"SenTestSuite");
-    OBASSERT(cls);
-
-    SenTestSuite *suite = [cls defaultTestSuite];
-    [suite run];
+    [self _showWebViewWithPath:indexPath title:helpBookName];
 }
 
 - (void)showAppMenu:(id)sender;

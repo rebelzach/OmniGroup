@@ -29,6 +29,7 @@ RCS_ID("$Id$");
 const CGFloat OUIInspectorContentWidth = 320;
 
 NSString * const OUIInspectorDidPresentNotification = @"OUIInspectorDidPresentNotification";
+NSString * const OUIInspectorDidDismissNotification = @"OUIInspectorDidDismissNotification";
 
 NSString * const OUIInspectorWillBeginChangingInspectedObjectsNotification = @"OUIInspectorWillBeginChangingInspectedObjectsNotification";
 NSString * const OUIInspectorDidEndChangingInspectedObjectsNotification = @"OUIInspectorDidEndChangingInspectedObjectsNotification";
@@ -122,8 +123,7 @@ NSString * const OUIInspectorDidEndChangingInspectedObjectsNotification = @"OUII
     [_popoverController dismissPopoverAnimated:NO];
     [_popoverController release];
     _popoverController = nil;
-    
-    [_nonretained_delegate inspectorDidDismiss:self];
+    [[NSNotificationCenter defaultCenter] postNotificationName:OUIInspectorDidDismissNotification object:self];
 }
 
 - (void)pushDetailSlice:(OUIInspectorDetailSlice *)detail;
@@ -195,7 +195,7 @@ NSString * const OUIInspectorDidEndChangingInspectedObjectsNotification = @"OUII
     _popoverController = nil;
     [self _stopObserving];
 
-    [_nonretained_delegate inspectorDidDismiss:self];
+    [[NSNotificationCenter defaultCenter] postNotificationName:OUIInspectorDidDismissNotification object:self];
 }
 
 #pragma mark -

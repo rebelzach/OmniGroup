@@ -11,7 +11,6 @@
 #import <CoreText/CoreText.h>
 #import <OmniUI/OUIInspector.h>
 #import <OmniUI/OUIEditableFrameDelegate.h>
-#import <OmniUI/OUILoupeOverlaySubject.h>
 
 @class NSMutableAttributedString;
 
@@ -20,7 +19,7 @@
 
 @class CALayer, CAShapeLayer;
 
-@interface OUIEditableFrame : OUIScalingView <UIKeyInput, UITextInputTraits, UITextInput, OUIInspectorDelegate, OUILoupeOverlaySubject>
+@interface OUIEditableFrame : OUIScalingView <UIKeyInput, UITextInputTraits, UITextInput, OUIInspectorDelegate>
 {
 @private
     /* The data model: an attributed string, a selection range. */
@@ -40,7 +39,6 @@
     UIColor *_insertionPointSelectionColor;
     UIColor *_rangeSelectionColor;
     NSDictionary *markedTextStyle; // Supplied by UIKit.
-    NSDictionary *_linkTextAttributes;
     id <OUIEditableFrameDelegate> delegate;
     CGSize layoutSize;
     UIEdgeInsets textInset;
@@ -61,21 +59,12 @@
     CGRect selectionDirtyRect, markedTextDirtyRect;
     
     struct {
-        // Our current state
         unsigned textNeedsUpdate : 1;
-        unsigned solidCaret: 1;
-        unsigned showingEditMenu: 1;
-        
-        // Cached information about our OUIEditableFrameDelegate
         unsigned delegateRespondsToLayoutChanged: 1;
         unsigned delegateRespondsToContentsChanged: 1;
-        
-        // Features which can be enabled or disabled
-        unsigned showSelectionThumbs: 1;  // Effectively disables range selection
-        unsigned showInspector: 1;        // Whether the inspector is offered
-        
-        //
-        unsigned immutableContentHasAttributeTransforms: 1;
+        unsigned showSelectionThumbs: 1;
+        unsigned solidCaret: 1;
+        unsigned showingEditMenu: 1;
     } flags;
     
     // Range selection adjustment and display
@@ -96,7 +85,12 @@
     /* A system-provided input delegate is assigned when the system is interested in input changes. */
     id <UITextInputDelegate> inputDelegate;
     UITextInputStringTokenizer *tokenizer;
+  
+    UIView *inputAccessoryView;
+    UIView *backingView_;
 }
+
+@property (nonatomic, retain) UIView *backingView;
 
 @property (nonatomic, readwrite, retain) UIColor *selectionColor;
 @property (nonatomic, copy) NSDictionary *typingAttributes;
@@ -112,16 +106,17 @@
 @property (nonatomic, readwrite) CTFontRef defaultCTFont;                      /* Applied to any runs lacking kCTFontAttributeName */
 @property (nonatomic, readwrite) CTParagraphStyleRef defaultCTParagraphStyle;  /* Applied to any runs lacking kCTParagraphStyleAttributeName */
 
-@property (nonatomic, copy) NSDictionary *linkTextAttributes;
-
 @property (nonatomic) BOOL autoCorrectDoubleSpaceToPeriodAtSentenceEnd;
 @property (nonatomic) UITextAutocorrectionType autocorrectionType;  // defaults to UITextAutocorrectionTypeNo
 @property (nonatomic) UITextAutocapitalizationType autocapitalizationType; // defaults to UITextAutocapitalizationTypeNone
 
+@property (nonatomic, readwrite, retain) UIView *inputAccessoryView;
+
+- (UITextRange *)selectedTextRange;
+- (void)setSelectedTextRange:(UITextRange *)newRange;
+
 - (void)setupCustomMenuItemsForMenuController:(UIMenuController *)menuController;
 
-- (OUEFTextRange *)rangeOfLineContainingPosition:(OUEFTextPosition *)posn;
-- (UITextRange *)selectionRangeForPoint:(CGPoint)p wordSelection:(BOOL)selectWords;
 
 /* These are the interface from the thumbs to our selection machinery */
 - (void)thumbBegan:(OUITextThumb *)thumb;
@@ -129,12 +124,9 @@
 - (void)thumbEnded:(OUITextThumb *)thumb normally:(BOOL)normalEnd;
 
 /* These are the interface from the inspectable spans */
-- (id <NSObject>)attribute:(NSString *)attr inRange:(UITextRange *)r;
-- (void)setValue:(id)value forAttribute:(NSString *)attr inRange:(UITextRange *)r;
+- (id <NSObject>)attribute:(NSString *)attr inRange:(OUEFTextRange *)r;
+- (void)setValue:(id)value forAttribute:(NSString *)attr inRange:(OUEFTextRange *)r;
 
-- (BOOL)hasTouchesForEvent:(UIEvent *)event;
-- (BOOL)hasTouchByGestureRecognizer:(UIGestureRecognizer *)recognizer;
 
-- (NSSet *)inspectableTextSpans;    // returns set of OUEFTextSpans 
 @end
 

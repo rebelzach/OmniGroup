@@ -44,9 +44,6 @@ typedef struct {
         unsigned int needsRecentering:1;
         unsigned int isRotating:1;
     } _flags;
-    
-    BOOL _disableScroll;     // we are turning off UIScrollView scrolling already, needed a different flag
-    BOOL _disableRotationDisplay;
 }
 
 @property(nonatomic,assign) id <OUIDocumentPickerViewDelegate> delegate;
@@ -69,6 +66,4 @@ typedef struct {
 - (void)willRotate;
 - (void)didRotate;
 
-@property(assign) BOOL disableScroll;
-@property(assign) BOOL disableRotationDisplay;
 @end

@@ -27,9 +27,6 @@
     BOOL _hasDoneAutosave;
 }
 
-+ (CFTimeInterval)autosaveTimeInterval;
-+ (BOOL)shouldShowAutosaveIndicator;
-
 - initWithExistingDocumentProxy:(OUIDocumentProxy *)proxy error:(NSError **)outError;
 - initEmptyDocumentToBeSavedToURL:(NSURL *)url error:(NSError **)outError;
 
@@ -41,7 +38,6 @@
 
 - (void)finishUndoGroup;
 - (IBAction)undo:(id)sender;
-- (IBAction)redo:(id)sender;
 
 - (BOOL)hasUnsavedChanges;
 - (BOOL)saveForClosing:(NSError **)outError;
@@ -58,9 +54,7 @@
 // Optional subclass methods
 - (void)willFinishUndoGroup;
 - (BOOL)shouldUndo;
-- (BOOL)shouldRedo;
 - (void)didUndo;
-- (void)didRedo;
 - (UIView *)viewToMakeFirstResponderWhenInspectorCloses;
 - (void)willClose;
 

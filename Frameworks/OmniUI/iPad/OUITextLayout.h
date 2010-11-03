@@ -15,31 +15,25 @@
 @interface OUITextLayout : OFObject
 {
 @private
-    NSAttributedString *_attributedString;
     CTFrameRef _frame;
     CGSize _layoutSize;
     CGRect _usedSize;
 }
 
-+ (NSDictionary *)defaultLinkTextAttributes;
+- initWithAttributedString:(CFAttributedStringRef)attributedString constraints:(CGSize)constraints;
 
-- initWithAttributedString:(NSAttributedString *)attributedString constraints:(CGSize)constraints;
+@property(readonly) CGSize usedSize;
 
-@property(readonly,nonatomic) NSAttributedString *attributedString;
-@property(readonly,nonatomic) CGSize usedSize;
-
-- (void)drawInContext:(CGContextRef)ctx; // Draws at (0,0) in the current coordinate system. Text draws upside down normally and with the last line that the origin.
-- (void)drawFlippedInContext:(CGContextRef)ctx bounds:(CGRect)bounds; // Draws like you'd expect text to be drawn -- with the text stuck to the top of the given bounds and right side up.
+- (void)drawInContext:(CGContextRef)ctx;
 
 @end
 
-extern CGRect OUITextLayoutMeasureFrame(CTFrameRef frame, BOOL includeTrailingWhitespace);
-extern CGPoint OUITextLayoutOrigin(CGRect typographicFrame, UIEdgeInsets textInset, // in text coordinates
-                                   CGRect bounds, // view rect we want to draw in
-                                   CGFloat scale); // scale factor from text to view
-extern void OUITextLayoutDrawFrame(CGContextRef ctx, CTFrameRef frame, CGRect bounds, CGPoint layoutOrigin);
+//extern CGSize OUITextLayoutMeasureSize(CTFrameRef frame);
+CGRect OUITextLayoutMeasureFrame(CTFrameRef frame, BOOL includeTrailingWhitespace);
+//extern CGPoint OUITextLayoutFrameOrigin(CTFrameRef frame);
+//extern void OUITextLayoutDrawFrame(CGContextRef ctx, CTFrameRef frame);
 extern void OUITextLayoutFixupParagraphStyles(NSMutableAttributedString *content);
 
 extern CTFontRef OUIGlobalDefaultFont(void);
+// extern CTParagraphStyleRef OUIGlobalDefaultParagraphStyle(void);
 
-extern NSAttributedString *OUICreateTransformedAttributedString(NSAttributedString *source, NSDictionary *linkAttributes);

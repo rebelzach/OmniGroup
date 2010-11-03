@@ -8,13 +8,12 @@
 // $Id$
 
 #import <QuartzCore/CAAnimation.h>
-#import <OmniQuartz/OQAnimationGroup.h>
 
 @interface OQLayerRemovalAnimation : CABasicAnimation
 + (BOOL)isRemovingLayer:(CALayer *)layer;
 + (BOOL)isRemovingAncestorOfLayer:(CALayer *)layer;
-+ (void)removeLayer:(CALayer *)layer completion:(void (^)(BOOL finished))completion;
 + (void)removeLayer:(CALayer *)layer;
+
 // Subclasses
 + animationForRemovingLayer:(CALayer *)layer;
 

@@ -1,4 +1,4 @@
-// Copyright 2004-2006, 2008, 2010 Omni Development, Inc.  All rights reserved.
+// Copyright 2004-2006, 2008 Omni Development, Inc.  All rights reserved.
 //
 // This software may only be used and reproduced according to the
 // terms in the file OmniSourceLicense.html, which should be
@@ -35,7 +35,7 @@ static void __testReplace(id self, NSString *sourceString, NSRange sourceRange, 
     should(didReplace == ([sourceString rangeOfString:lookFor options:0 range:sourceRange].length > 0));
     shouldBeEqual([mutatingString string], resultString);
 
-    [pool drain];
+    [pool release];
 }
 
 #define _testReplace(sourceString, sourceRange, lookFor, replaceWith, resultString) \

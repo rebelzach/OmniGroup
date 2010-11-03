@@ -8,11 +8,10 @@
 // $Id$
 
 #import <OmniUI/OUIAppController.h>
-#import <OmniUI/OUIUndoBarButtonItem.h>
 
 @class OUIDocument, OUIToolbarViewController;
 
-@interface OUISingleDocumentAppController : OUIAppController <UITextFieldDelegate, OUIUndoBarButtonItemTarget>
+@interface OUISingleDocumentAppController : OUIAppController <UITextFieldDelegate>
 {
 @private
     
@@ -25,7 +24,7 @@
     UIBarButtonItem *_closeDocumentBarButtonItem;
     UITextField *_documentTitleTextField;
     UIBarButtonItem *_documentTitleToolbarItem;
-    OUIUndoBarButtonItem *_undoBarButtonItem;
+    UIBarButtonItem *_undoBarButtonItem;
     UIBarButtonItem *_infoBarButtonItem;
     OUIDocument *_document;
     
@@ -40,7 +39,7 @@
 @property(nonatomic,retain) IBOutlet UIBarButtonItem *documentTitleToolbarItem;
 
 @property(readonly) UIBarButtonItem *closeDocumentBarButtonItem;
-@property(readonly) OUIUndoBarButtonItem *undoBarButtonItem;
+@property(readonly) UIBarButtonItem *undoBarButtonItem;
 @property(readonly) UIBarButtonItem *infoBarButtonItem;
 
 - (NSString *)documentTypeForURL:(NSURL *)url;

@@ -19,13 +19,8 @@ enum {
     OnlineHelp,
     SendFeedback,
     ReleaseNotes,
-    NormalMenuItemCount,
-    
-    //
-    RunTests = NormalMenuItemCount
+    MenuItemCount,
 } MenuItem;
-
-static NSUInteger MenuItemCount = NormalMenuItemCount;
 
 @interface OUIAppMenuController (/*Private*/)
 - (void)_toggleSampleDocuments:(id)sender;
@@ -33,22 +28,6 @@ static NSUInteger MenuItemCount = NormalMenuItemCount;
 @end
 
 @implementation OUIAppMenuController
-
-+ (void)initialize;
-{
-    OBINITIALIZE;
-    
-    BOOL includedTestsMenu;
-    
-#if defined(DEBUG)
-    includedTestsMenu = YES;
-#else
-    includedTestsMenu = [[NSUserDefaults standardUserDefaults] boolForKey:@"OUIIncludeTestsMenu"];
-#endif
-
-    if (includedTestsMenu && NSClassFromString(@"SenTestSuite"))
-        MenuItemCount++;
-}
 
 - (id)initWithNibName:(NSString *)nibNameOrNil bundle:(NSBundle *)nibBundleOrNil;
 {
@@ -152,7 +131,7 @@ static NSUInteger MenuItemCount = NormalMenuItemCount;
         }
 #endif
         case OnlineHelp:
-            title = [[NSBundle mainBundle] localizedStringForKey:@"OUIHelpBookName" value:[[NSBundle mainBundle] objectForInfoDictionaryKey:@"OUIHelpBookName"] table:@"InfoPlist"];
+            title = [[NSBundle mainBundle] objectForInfoDictionaryKey:@"OUIHelpBookName"];
             image = [UIImage imageNamed:@"OUIMenuItemHelp.png"];
             OBASSERT(title != nil);
             break;
@@ -164,11 +143,6 @@ static NSUInteger MenuItemCount = NormalMenuItemCount;
             title = NSLocalizedStringFromTableInBundle(@"Release Notes", @"OmniUI", OMNI_BUNDLE, @"App menu item title");
             image = [UIImage imageNamed:@"OUIMenuItemReleaseNotes.png"];
             break;
-        case RunTests:
-            title = NSLocalizedStringFromTableInBundle(@"Run Tests", @"OmniUI", OMNI_BUNDLE, @"App menu item title");
-            image = [UIImage imageNamed:@"OUIMenuItemRunTests.png"];
-            break;
-            
         default:
             OBASSERT_NOT_REACHED("Unknown menu item row requested");
             return [[[UITableViewCell alloc] initWithFrame:CGRectZero reuseIdentifier:nil] autorelease];
@@ -216,9 +190,6 @@ static NSUInteger MenuItemCount = NormalMenuItemCount;
             break;
         case ReleaseNotes:
             action = @selector(showReleaseNotes:);
-            break;
-        case RunTests:
-            action = @selector(runTests:);
             break;
         default:
             OBASSERT_NOT_REACHED("Unknown menu item selected");

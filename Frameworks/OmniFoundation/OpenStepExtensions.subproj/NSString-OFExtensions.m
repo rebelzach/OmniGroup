@@ -1375,7 +1375,7 @@ NSString *OFCreateDecimalStringFromDouble(double value)
 {
     char *buf = OFASCIIDecimalStringFromDouble(value);
     CFStringRef result = CFStringCreateWithCStringNoCopy(kCFAllocatorDefault, buf, kCFStringEncodingASCII, kCFAllocatorMalloc);
-    return NSMakeCollectable(result);
+    return (NSString *)result;
 }
 
 @end

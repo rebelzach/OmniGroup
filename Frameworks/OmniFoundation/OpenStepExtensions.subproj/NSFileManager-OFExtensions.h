@@ -48,6 +48,9 @@
 - (NSDictionary *)lockFileAtPath:(NSString *)path overridingExistingLock:(BOOL)override created:(BOOL *)outCreated error:(NSError **)outError;
 - (void)unlockFileAtPath:(NSString *)path;
 
+- (BOOL)replaceFileAtPath:(NSString *)originalFile withFileAtPath:(NSString *)newFile error:(NSError **)outError;
+- (BOOL)exchangeFileAtPath:(NSString *)originalFile withFileAtPath:(NSString *)newFile error:(NSError **)outError;
+
 //
 
 - (NSNumber *)posixPermissionsForMode:(unsigned int)mode;
@@ -76,4 +79,10 @@
    // Checks whether one path is a subdirectory of another, optionally returning the relative path (a suffix of thisPath). Consults the filesystem in an attempt to discover commonalities due to symlinks and file mounts. (Does not handle aliases, particularly.)
 - (BOOL)path:(NSString *)otherPath isAncestorOfPath:(NSString *)thisPath relativePath:(NSString **)relativeResult;
 
+@end
+
+#import <OmniBase/macros.h>
+OBDEPRECATED_METHODS(NSFileManagerHandler)
+- (BOOL)fileManager:(NSFileManager *)fm shouldProceedAfterError:(NSDictionary *)errorInfo;
+- (void)fileManager:(NSFileManager *)fm willProcessPath:(NSString *)path;
 @end

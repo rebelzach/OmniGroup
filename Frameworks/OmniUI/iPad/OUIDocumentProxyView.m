@@ -94,6 +94,7 @@ static UIImage *PlaceholderPreviewImage = nil;
 static id _commonInit(OUIDocumentProxyView *self)
 {
     CALayer *layer = self.layer;
+    layer.geometryFlipped = YES;
     layer.edgeAntialiasingMask = 0; // See drawing code below.
     layer.needsDisplayOnBoundsChange = YES;
     
@@ -177,11 +178,6 @@ static CGRect _paperRect(id <OUIDocumentPreview> preview, CGRect bounds)
     return preview ? preview.untransformedPageRect : bounds;
 }
 
-- (NSArray *)shadowEdgeViews;
-{
-    return _shadowEdgeViews;
-}
-
 #pragma mark -
 #pragma mark UIView subclass
 
@@ -195,7 +191,7 @@ static CGRect _paperRect(id <OUIDocumentPreview> preview, CGRect bounds)
 
 - (void)layoutSubviews;
 {
-    OUIViewLayoutShadowEdges(self, _shadowEdgeViews, YES/*flip*/);
+    OUIViewLayoutShadowEdges(self, _shadowEdgeViews, NO/*flip*/);
 
 #if SHOW_SELECTION
     _selectionGrayView.frame = self.bounds;

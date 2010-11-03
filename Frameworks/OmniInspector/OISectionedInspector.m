@@ -96,22 +96,6 @@ RCS_ID("$Id$")
     return self;
 }
 
-- (void)inspectorDidResize:(OIInspector *)resizedInspector;
-{
-    OBASSERT(resizedInspector != self); // Don't call us if we are the resized inspector, only on ancestors of that inspector
-    NSView *resizedView = [resizedInspector inspectorView];
-    OBASSERT([resizedView isDescendantOf:[self inspectorView]]);
-    for (OIInspectorSection *section in _sectionInspectors) {
-        if ([resizedView isDescendantOf:[section inspectorView]]) {
-            if (resizedInspector != section) {
-                [section inspectorDidResize:resizedInspector];
-            }
-            break;
-        }
-    }
-    [self _layoutSections];
-}
-
 #pragma mark -
 #pragma mark OIConcreteInspector protocol
 
@@ -147,13 +131,6 @@ RCS_ID("$Id$")
 - (void)setInspectorController:(OIInspectorController *)aController;
 {
     _nonretained_inspectorController = aController;
-
-    // Set the controller on all of our child inspectors as well
-    for (OIInspector *inspector in _sectionInspectors) {
-        if ([inspector respondsToSelector:_cmd]) {
-            [inspector setInspectorController:aController];
-        }
-    }
 }
 
 #pragma mark -

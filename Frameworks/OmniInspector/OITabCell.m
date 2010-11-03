@@ -187,11 +187,9 @@ NSString *TabTitleDidChangeNotification = @"TabTitleDidChange";
 
 - (id)copyWithZone:(NSZone *)zone;
 {
-    OITabCell *copy = [super copyWithZone:zone];
-    copy->grayscaleImage = [grayscaleImage retain];
-    copy->dimmedImage = [dimmedImage retain];
-
-    return copy;
+    // We have retained ivars that would need to be addressed.
+    OBRequestConcreteImplementation(self, _cmd);
+    return nil;
 }
 
 #ifdef USE_CORE_IMAGE

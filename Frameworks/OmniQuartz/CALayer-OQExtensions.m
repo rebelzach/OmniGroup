@@ -483,17 +483,12 @@ static void _writeString(NSString *str)
 {
     if (self.hidden)
         return;
-    [self renderInContextIgnoringHiddenIgnoringCache:ctx useAnimatedValues:useAnimatedValues];
-}
-
-- (void)renderInContextIgnoringHiddenIgnoringCache:(CGContextRef)ctx useAnimatedValues:(BOOL)useAnimatedValues;
-{
+    
     [self layoutIfNeeded];
     
 #define GET_VALUE(x) (useAnimatedValues ? OQCurrentAnimationValue(x) : self.x)
     
-    // OOFlippedLayerView is flipped, so don't assert this
-    //OBASSERT(GET_VALUE(geometryFlipped) == NO); // Need to flip the CTM ourselves for this property added in 10.6
+    OBASSERT(GET_VALUE(geometryFlipped) == NO); // Need to flip the CTM ourselves for this property added in 10.6
     OBASSERT(GET_VALUE(isDoubleSided)); // Not handling back face culling.
     OBASSERT(GET_VALUE(mask) == nil); // Not handling mask layers or any filters
     OBASSERT(NSEqualRects(GET_VALUE(contentsRect), NSMakeRect(0, 0, 1, 1))); // Should be showing the full content
@@ -546,7 +541,7 @@ static void _writeString(NSString *str)
         
         // We require that the delegate implement the CGContextRef path, not just -displayLayer:.
         id delegate = self.delegate;
-        if (delegate && [delegate respondsToSelector:@selector(drawLayer:inContext:)]) {
+        if (delegate) {
             DEBUG_RENDER(@"  rendering %@ via delegate %@", [self shortDescription], [delegate shortDescription]);
             [delegate drawLayer:self inContext:ctx];
         } else {
@@ -581,7 +576,7 @@ static void _writeString(NSString *str)
 
             for (CALayer *sublayer in sortedSublayers) {            
                 CGContextSaveGState(ctx);
-                //OBASSERT(CGPointEqualToPoint(self.bounds.origin, CGPointMake(0, 0)));
+                OBASSERT(CGPointEqualToPoint(self.bounds.origin, CGPointMake(0, 0)));
                 
                 CGPoint subAnchorPoint = sublayer.anchorPoint; // 0-1 unit coordinate space with 0,0 being bottom left.
                 CGRect subBounds = sublayer.bounds;

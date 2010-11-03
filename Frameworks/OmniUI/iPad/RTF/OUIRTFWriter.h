@@ -30,7 +30,6 @@
         int fontSize;
         int fontIndex;
         int colorIndex;
-        unsigned int underline;
         OAFontDescriptor *fontDescriptor;
         int alignment;
         int firstLineIndent;

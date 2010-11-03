@@ -17,6 +17,7 @@
 {
     // the locale of this parser
     NSLocale *_locale;
+    NSCalendar *currentCalendar;   
     
     // locale specific, change when setLocale is called
     NSArray *_weekdays;
@@ -36,12 +37,13 @@
 	   forString:(NSString *)string
    	       error:(NSError **)error;
 
-- (BOOL)getDateValue:(NSDate **)date forString:(NSString *)string useEndOfDuration:(BOOL)useEndOfDuration defaultTimeDateComponents:(NSDateComponents *)defaultTimeDateComponents calendar:(NSCalendar *)calendar error:(NSError **)error;
+- (BOOL)getDateValue:(NSDate **)date forString:(NSString *)string useEndOfDuration:(BOOL)useEndOfDuration defaultTimeDateComponents:(NSDateComponents *)defaultTimeDateComponents error:(NSError **)error;
 
 - (BOOL)getDateValue:(NSDate **)date 
 	   forString:(NSString *)string 
     fromStartingDate:(NSDate *)startingDate 
-            calendar:(NSCalendar *)calendar
+	withTimeZone:(NSTimeZone *)timeZone 
+withCalendarIdentifier:(NSString *)nsLocaleCalendarKey 
  withShortDateFormat:(NSString *)shortFormat 
 withMediumDateFormat:(NSString *)mediumFormat 
   withLongDateFormat:(NSString *)longFormat 
@@ -51,7 +53,8 @@ withMediumDateFormat:(NSString *)mediumFormat
 - (BOOL)getDateValue:(NSDate **)date 
 	   forString:(NSString *)string 
     fromStartingDate:(NSDate *)startingDate 
-            calendar:(NSCalendar *)calendar
+	withTimeZone:(NSTimeZone *)timeZone 
+withCalendarIdentifier:(NSString *)nsLocaleCalendarKey 
  withShortDateFormat:(NSString *)shortFormat 
 withMediumDateFormat:(NSString *)mediumFormat 
   withLongDateFormat:(NSString *)longFormat 
@@ -61,7 +64,7 @@ defaultTimeDateComponents:(NSDateComponents *)defaultTimeDateComponents
  	       error:(NSError **)error;
 
 - (NSString *)stringForDate:(NSDate *)date withDateFormat:(NSString *)dateFormat withTimeFormat:(NSString *)timeFormat;
-- (NSString *)stringForDate:(NSDate *)date withDateFormat:(NSString *)dateFormat withTimeFormat:(NSString *)timeFormat calendar:(NSCalendar *)calendar;
+- (NSString *)stringForDate:(NSDate *)date withDateFormat:(NSString *)dateFormat withTimeFormat:(NSString *)timeFormat withTimeZone:(NSTimeZone *)timeZone withCalendarIdentifier:(NSString *)nsLocaleCalendarKey ;
 
 @end
 

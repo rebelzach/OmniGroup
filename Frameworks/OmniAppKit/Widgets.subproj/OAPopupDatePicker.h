@@ -25,6 +25,7 @@
     
     id _control;
     NSFormatter *_controlFormatter;
+    SEL _stringUpdateSelector;
     
     BOOL _startedWithNilDate;
     
@@ -42,11 +43,12 @@
 - (void)setCalendar:(NSCalendar *)calendar;
 
 - (void)startPickingDateWithTitle:(NSString *)title forControl:(NSControl *)aControl stringUpdateSelector:(SEL)stringUpdateSelector defaultDate:(NSDate *)defaultDate;
-- (void)startPickingDateWithTitle:(NSString *)title fromRect:(NSRect)viewRect inView:(NSView *)emergeFromView bindToObject:(id)bindObject withKeyPath:(NSString *)bindingKeyPath control:(id)control controlFormatter:(NSFormatter* )controlFormatter defaultDate:(NSDate *)defaultDate;
+- (void)startPickingDateWithTitle:(NSString *)title fromRect:(NSRect)viewRect inView:(NSView *)emergeFromView bindToObject:(id)bindObject withKeyPath:(NSString *)bindingKeyPath control:(id)control controlFormatter:(NSFormatter* )controlFormatter stringUpdateSelector:(SEL)stringUpdateSelector defaultDate:(NSDate *)defaultDate;
 
 - (id)destinationObject;
 - (NSString *)bindingKeyPath;
 
+- (void)clearIfNotClicked;
 - (BOOL)isKey;
 - (void)close;
 

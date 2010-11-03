@@ -1,9 +1,10 @@
-// Copyright 2010 Omni Development, Inc.  All rights reserved.
 //
-// This software may only be used and reproduced according to the
-// terms in the file OmniSourceLicense.html, which should be
-// distributed with this project and can also be found at
-// <http://www.omnigroup.com/developer/sourcecode/sourcelicense/>.
+//  DetailViewController.m
+//  DropShadowOptions
+//
+//  Created by Timothy J. Wood on 4/2/10.
+//  Copyright The Omni Group 2010. All rights reserved.
+//
 
 #import "DetailViewController.h"
 #import "RootViewController.h"
@@ -12,8 +13,6 @@
 
 #import <OmniBase/assertions.h>
 #import <QuartzCore/CATransaction.h>
-
-RCS_ID("$Id$")
 
 @interface DetailViewController ()
 @property (nonatomic, retain) UIPopoverController *popoverController;

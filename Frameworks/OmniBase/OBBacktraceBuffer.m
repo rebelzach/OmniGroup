@@ -26,17 +26,16 @@ RCS_ID("$Id$")
 #endif
 
 static struct OBBacktraceBuffer backtraces[OBBacktraceBufferTraceCount];
-static volatile int32_t next_available_backtrace;
+static int next_available_backtrace;
 static struct OBBacktraceBuffer *OBAcquireBacktraceBuffer();
 
-/* this is non-static so that CrashCatcher can find it even in a stripped build */
 const struct OBBacktraceBufferInfo OBBacktraceBufferInfo = {
     OBBacktraceBufferInfoVersionMagic, sizeof(struct OBBacktraceBufferInfo),
     OBBacktraceBufferAddressCount, OBBacktraceBufferTraceCount,
-    backtraces, &next_available_backtrace
+    (uintptr_t)backtraces, (uintptr_t)&next_available_backtrace
 };
 
-void OBRecordBacktrace(uintptr_t ctxt, unsigned int optype)
+void OBRecordBacktrace(uintptr_t ctxt, int optype)
 {
     assert(optype != OBBacktraceBuffer_Unused && optype != OBBacktraceBuffer_Allocated); // 0 and 1 reserved for us
     
@@ -61,15 +60,15 @@ void OBRecordBacktrace(uintptr_t ctxt, unsigned int optype)
 
 static struct OBBacktraceBuffer *OBAcquireBacktraceBuffer()
 {
-    int32_t slot = next_available_backtrace;
+    int slot = next_available_backtrace;
     
     for(;;) {
-        int32_t next_slot = ( slot >= ( OBBacktraceBufferTraceCount-1 ) ) ? 0 : slot+1;
-        int32_t was_slot;
+        int next_slot = ( slot >= ( OBBacktraceBufferTraceCount-1 ) ) ? 0 : slot+1;
+        int was_slot;
 #ifdef BUILTIN_ATOMICS
         was_slot = __sync_val_compare_and_swap(&next_available_backtrace, slot, next_slot);
 #else
-        was_slot = OSAtomicCompareAndSwap32(slot, next_slot, &next_available_backtrace);
+        was_slot = OSAtomicCompareAndSwapInt(slot, next_slot, &next_available_backtrace);
 #endif
         if (__builtin_expect(was_slot == slot, 1))
             break;

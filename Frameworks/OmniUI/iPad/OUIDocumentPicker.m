@@ -48,9 +48,6 @@ static NSString * const ProxiesBinding = @"proxies";
 - (void)_sendEmailWithSubject:(NSString *)subject attachmentName:(NSString *)name data:(NSData *)data fileType:(NSString *)fileType;
 - (UIImage *)_cameraRollImageForProxy:(OUIDocumentProxy *)documentProxy;
 - (void)_deleteWithoutConfirmation;
-- (CAMediaTimingFunction *)_caMediaTimingFunctionForUIViewAnimationCurve:(UIViewAnimationCurve)uiViewAnimationCurve;
-- (void)_animateWithKeyboard:(NSNotification *)notification showing:(BOOL)keyboardIsShowing;
-- (NSURL *)_renameProxy:(OUIDocumentProxy *)proxy toName:(NSString *)name type:(NSString *)documentUTI rescanDocuments:(BOOL)rescanDocuments;
 @end
 
 @implementation OUIDocumentPicker
@@ -397,7 +394,6 @@ static id _commonInit(OUIDocumentPicker *self)
 
     // Not -_documentProxyTapped: since that starts a scroll to the proxy if it isn't the one currently in the middle, but we might still be animating to the new docuemnt
     [_proxyTappedTarget performSelector:_proxyTappedAction withObject:proxy];
-    _isRevealingNewDocument = NO;
 }
 
 - (BOOL)hasDocuments;
@@ -449,9 +445,38 @@ static id _commonInit(OUIDocumentPicker *self)
     return [[NSFileManager defaultManager] removeItemAtPath:[proxy.url path] error:outError];
 }
 
-- (NSURL *)renameProxy:(OUIDocumentProxy *)proxy toName:(NSString *)name type:(NSString *)documentUTI;
+- (OUIDocumentProxy *)renameProxy:(OUIDocumentProxy *)proxy toName:(NSString *)name type:(NSString *)documentUTI;
 {
-    return [self _renameProxy:proxy toName:name type:documentUTI rescanDocuments:YES];
+    CFStringRef extension = UTTypeCopyPreferredTagWithClass((CFStringRef)documentUTI, kUTTagClassFilenameExtension);
+    if (!extension)
+        OBRequestConcreteImplementation(self, _cmd); // UTI not registered in the Info.plist?
+    
+    NSString *directory = [[self class] userDocumentsDirectory];
+    NSUInteger emptyCounter = 0;
+    NSString *safePath = _availablePath(directory, name, (NSString *)extension, &emptyCounter);
+    CFRelease(extension);
+    
+    NSFileManager *fileManager = [NSFileManager defaultManager];
+    NSURL *oldURL = [proxy url];
+    NSError *error = nil;
+    if (![fileManager moveItemAtPath:[oldURL path] toPath:safePath error:&error]) {
+        NSLog(@"Unable to copy %@ to %@: %@", [oldURL path], safePath, [error toPropertyList]);
+        return proxy;
+    }
+    NSDictionary *attributes = [fileManager attributesOfItemAtPath:safePath error:NULL];
+    if (attributes != nil) {
+        NSUInteger mode = [attributes filePosixPermissions];
+        if ((mode & S_IWUSR) == 0) {
+            mode |= S_IWUSR;
+            [fileManager setAttributes:[NSDictionary dictionaryWithObject:[NSNumber numberWithUnsignedInteger:mode] forKey:NSFilePosixPermissions] ofItemAtPath:safePath error:NULL]; // Not bothering to check for errors:  if this fails, we'll find out when it matters
+        }
+    }
+
+    NSURL *newURL = [NSURL fileURLWithPath:safePath];
+    [self rescanDocumentsScrollingToURL:newURL];
+    OUIDocumentProxy *newProxy = [self proxyWithURL:newURL];    
+    
+    return newProxy;
 }
 
 - (NSURL *)urlForNewDocumentOfType:(NSString *)documentUTI;
@@ -522,12 +547,8 @@ static id _commonInit(OUIDocumentPicker *self)
 
 - (IBAction)newDocument:(id)sender;
 {
-    if (_isRevealingNewDocument || !_isInnerController) {  // will still be the inner controller while scrolling to the new doc
-        return;
-    }
-    
     [[OUIAppController controller] dismissAppMenu];
-    
+
     NSString *documentType = [_nonretained_delegate documentPickerDocumentTypeForNewFiles:self];
     NSURL *newDocumentURL = [self urlForNewDocumentOfType:documentType];
     NSError *error = nil;
@@ -536,9 +557,6 @@ static id _commonInit(OUIDocumentPicker *self)
         OUI_PRESENT_ERROR(error);
         return;
     }
-    
-    _isRevealingNewDocument = YES;
-    
     [document setProxy:[self revealAndActivateNewDocumentAtURL:newDocumentURL]];
 }
 
@@ -636,6 +654,10 @@ static id _commonInit(OUIDocumentPicker *self)
 
     [_actionSheetActions addObject:NSStringFromSelector(@selector(_deleteWithoutConfirmation))];
 
+    // Passing a cancelButtonTitle only adds a button on iPhone.  We really want one, though.
+    [actionSheet addButtonWithTitle:NSLocalizedStringFromTableInBundle(@"Cancel", @"OmniUI", OMNI_BUNDLE, @"cancel button title")];
+    [_actionSheetActions addObject:NSStringFromSelector(@selector(actionSheetCancel:))]; // Not really an action, part of the delegate API that gets called when tapping outside the popover on iPad (and you have a cancel button define, which we don't).
+    
     OBASSERT(sender == _deleteButton); // If not, we'll be popping this up from the wrong place
     [actionSheet showFromRect:[_deleteButton frame] inView:[_deleteButton superview] animated:YES];
     
@@ -659,7 +681,6 @@ static id _commonInit(OUIDocumentPicker *self)
     _actionSheetActions = [[NSMutableArray alloc] init];
 
     BOOL canMakePDF = [_nonretained_delegate respondsToSelector:@selector(documentPicker:PDFDataForProxy:error:)];
-    BOOL canMakePNG = [_nonretained_delegate respondsToSelector:@selector(documentPicker:PNGDataForProxy:error:)];
     BOOL canMakeImage = [_nonretained_delegate respondsToSelector:@selector(documentPicker:cameraRollImageForProxy:)];
     
     if ([MFMailComposeViewController canSendMail]) {
@@ -671,11 +692,6 @@ static id _commonInit(OUIDocumentPicker *self)
         if (canMakePDF) {
             [actionSheet addButtonWithTitle:NSLocalizedStringFromTableInBundle(@"Send PDF via Mail", @"OmniUI", OMNI_BUNDLE, @"Menu option in the document picker view")];
             [_actionSheetActions addObject:NSStringFromSelector(@selector(emailPDF:))];
-        }
-        
-        if (canMakePNG) {
-            [actionSheet addButtonWithTitle:NSLocalizedStringFromTableInBundle(@"Send PNG via Mail", @"OmniUI", OMNI_BUNDLE, @"Menu option in the document picker view")];
-            [_actionSheetActions addObject:NSStringFromSelector(@selector(emailPNG:))];
         }
     }
     
@@ -704,10 +720,11 @@ static id _commonInit(OUIDocumentPicker *self)
     }
 
     NSURL *documentURL = [documentProxy url];
+
     NSString *documentExtension = [[documentURL path] pathExtension];
     NSString *documentType = [(NSString *)UTTypeCreatePreferredIdentifierForTag(kUTTagClassFilenameExtension, (CFStringRef)documentExtension, NULL) autorelease];
     OBASSERT(documentType != nil); // UTI should be registered in the Info.plist under CFBundleDocumentTypes
-    NSData *documentData = [documentProxy emailData];
+    NSData *documentData = [NSData dataWithContentsOfURL:documentURL];
     NSString *documentFilename = [[documentURL path] lastPathComponent];
 
     [self _sendEmailWithSubject:[documentProxy name] attachmentName:documentFilename data:documentData fileType:documentType];
@@ -732,27 +749,6 @@ static id _commonInit(OUIDocumentPicker *self)
     NSString *pdfFilename = [[documentFilename stringByDeletingPathExtension] stringByAppendingPathExtension:@"pdf"];
 
     [self _sendEmailWithSubject:[documentProxy name] attachmentName:pdfFilename data:pdfData fileType:(NSString *)kUTTypePDF];
-}
-
-- (void)emailPNG:(id)sender;
-{
-    OUIDocumentProxy *documentProxy = _previewScrollView.selectedProxy;
-    if (!documentProxy) {
-        OBASSERT_NOT_REACHED("button should have been disabled");
-        return;
-    }
-    
-    NSError *error = nil;
-    NSData *pngData = [_nonretained_delegate documentPicker:self PNGDataForProxy:documentProxy error:&error];
-    if (!pngData) {
-        OUI_PRESENT_ERROR(error);
-        return;
-    }
-    
-    NSString *documentFilename = [[documentProxy.url path] lastPathComponent];
-    NSString *pngFilename = [[documentFilename stringByDeletingPathExtension] stringByAppendingPathExtension:@"png"];
-    
-    [self _sendEmailWithSubject:[documentProxy name] attachmentName:pngFilename data:pngData fileType:(NSString *)kUTTypePNG];
 }
 
 - (void)copyAsImage:(id)sender;
@@ -814,195 +810,6 @@ static id _commonInit(OUIDocumentPicker *self)
 - (void)_sendToCameraRollImage:(UIImage *)image didFinishSavingWithError:(NSError *)error contextInfo:(void *)contextInfo;
 {
     OUI_PRESENT_ERROR(error);
-}
-
-- (IBAction)editTitle:(id)sender;
-{
-    if (!_titleEditingField) {
-        _titleEditingField = [[UITextField alloc] initWithFrame:CGRectZero];
-        _titleEditingField.autoresizingMask = UIViewAutoresizingFlexibleLeftMargin | UIViewAutoresizingFlexibleRightMargin; 
-        _titleEditingField.font = _titleLabel.titleLabel.font; 
-        _titleEditingField.textColor = [UIColor blackColor];
-        _titleEditingField.textAlignment = UITextAlignmentCenter;
-        _titleEditingField.borderStyle = UITextBorderStyleRoundedRect;
-        _titleEditingField.clearButtonMode = UITextFieldViewModeWhileEditing;
-        
-        _titleEditingField.delegate = self;
-        
-        [self.view addSubview:_titleEditingField];
-    }
-    
-    CGRect titleEditingFieldFrame;
-    titleEditingFieldFrame.size.width = 400;
-    titleEditingFieldFrame.size.height = 35;
-    titleEditingFieldFrame.origin.x = CGRectGetMidX(_titleLabel.frame) - titleEditingFieldFrame.size.width/2;
-    titleEditingFieldFrame.origin.y = CGRectGetMidY(_titleLabel.frame) - titleEditingFieldFrame.size.height/2;
-    _titleEditingField.frame = titleEditingFieldFrame;
-    
-    _titleEditingField.text = _titleLabel.currentTitle;
-    
-    _titleEditingField.alpha = 1;
-    _editingTitle = YES;
-    _previewScrollView.disableRotationDisplay = YES;
-
-    [_titleEditingField becomeFirstResponder];
-    
-    [_titleEditingField setHidden:NO];
-    [_titleLabel setHidden:YES];
-    [_dateLabel setHidden:YES];
-    [_buttonGroupView setHidden:YES];
-    
-    _editingProxyURL = [[[_previewScrollView selectedProxy] url] retain];
-}
-
-#pragma mark -
-#pragma mark UITextField delegate
-- (void)textFieldDidEndEditing:(UITextField *)textField;
-{
-    NSString *newName = [textField text];
-    if (!newName || [newName length] == 0) {
-        _editingTitle = NO;
-        _previewScrollView.disableRotationDisplay = NO;
-        return;
-    }
-    
-    OUIDocumentProxy *currentProxy = [self selectedProxy];
-    if (![newName isEqualToString:[currentProxy name]]) {
-        NSString *fileExtension = [[[currentProxy url] absoluteString] pathExtension];
-        NSString *uti = [(NSString *)UTTypeCreatePreferredIdentifierForTag(kUTTagClassFilenameExtension, (CFStringRef)fileExtension, NULL) autorelease];
-        OBASSERT(uti);
-        NSURL *newProxyURL = [self _renameProxy:currentProxy toName:newName type:uti rescanDocuments:NO];
-        
-        if ([[newProxyURL path] isEqualToString:[[currentProxy url] path]]) {
-            NSString *msg = [NSString stringWithFormat:NSLocalizedStringFromTableInBundle(@"Unable to rename document to %@", @"OmniUI", OMNI_BUNDLE, @"error when renaming a document"), newName];                
-            NSError *err = [[NSError alloc] initWithDomain:NSURLErrorDomain code:0 userInfo:[NSDictionary dictionaryWithObjectsAndKeys:msg, NSLocalizedDescriptionKey, msg, NSLocalizedFailureReasonErrorKey, nil]];
-            OUI_PRESENT_ERROR(err);
-            [err release];            
-        }
-        
-        [_editingProxyURL release];
-        _editingProxyURL = nil;
-        
-        _editingProxyURL = [newProxyURL retain];
-    }
-    
-    _editingTitle = NO;
-    _previewScrollView.disableRotationDisplay = NO;
-    
-    if (!_keyboardIsShowing) {
-        // TODO: merge this with the similar code in keyboardDidHide
-        [_titleLabel setAlpha:0];
-        [_dateLabel setAlpha:0];
-        [_buttonGroupView setAlpha:0];
-        [_titleLabel setHidden:NO];
-        [_dateLabel setHidden:NO];
-        [_buttonGroupView setHidden:NO];
-        
-        [_titleEditingField setHidden:YES];
-        
-        [UIView beginAnimations:@"button fade in" context:nil];
-        {
-            [UIView setAnimationDuration:0.25];
-            
-            [_titleLabel setAlpha:1];
-            [_dateLabel setAlpha:1];
-            [_buttonGroupView setAlpha:1];
-            
-        }
-        [UIView commitAnimations];
-        
-        [self.view.layer recursivelyRemoveAnimationForKey:PositionAdjustAnimation];
-        self.previewScrollView.disableLayout = NO;
-        
-        if (_editingProxyURL) {
-            [self rescanDocumentsScrollingToURL:_editingProxyURL animated:NO];
-            
-            [_editingProxyURL release];
-            _editingProxyURL = nil;
-        }
-    }
-}
-
-- (BOOL)textField:(UITextField *)textField shouldChangeCharactersInRange:(NSRange)range replacementString:(NSString *)string;
-{
-    return YES;
-}
-
-- (BOOL)textFieldShouldReturn:(UITextField *)textField;
-{
-    if (_editingTitle)
-        [_titleEditingField resignFirstResponder];
-    
-    return YES;
-}
-
-#pragma mark -
-#pragma mark keyboard
-@synthesize editingTitle = _editingTitle;
-- (void)keyboardWillShow:(NSNotification *)notification;
-{
-    _keyboardIsShowing = YES;
-    
-    if (!_editingTitle)
-        return;
-    
-    [self _animateWithKeyboard:notification showing:YES];
-}
-
-- (void)keyboardDidShow:(NSNotification *)notification;
-{
-}
-
-- (void)keyboardWillHide:(NSNotification *)notification;
-{
-    if (!_editingTitle)
-        return;
-    
-    [self _animateWithKeyboard:notification showing:NO];
-}
-
-- (void)_snapToProxy:/*(OUIDocumentProxy *)aProxy*/ (NSURL *)aProxyURL;
-{
-//    [_previewScrollView snapToProxy:aProxy animated:NO];
-    [self rescanDocumentsScrollingToURL:aProxyURL animated:NO];
-}
-
-- (void)keyboardDidHide:(NSNotification *)notification;
-{
-    _keyboardIsShowing = NO;
-
-    if (_editingTitle)     // Keyboard hid, but editing is still going on
-        return;
-    
-    [_titleLabel setAlpha:0];
-    [_dateLabel setAlpha:0];
-    [_buttonGroupView setAlpha:0];
-    [_titleLabel setHidden:NO];
-    [_dateLabel setHidden:NO];
-    [_buttonGroupView setHidden:NO];
-    
-    [_titleEditingField setHidden:YES];
-    
-    [UIView beginAnimations:@"button fade in" context:nil];
-    {
-        [UIView setAnimationDuration:0.25];
-        
-        [_titleLabel setAlpha:1];
-        [_dateLabel setAlpha:1];
-        [_buttonGroupView setAlpha:1];
-        
-    }
-    [UIView commitAnimations];
-    
-    [self.view.layer recursivelyRemoveAnimationForKey:PositionAdjustAnimation];
-    self.previewScrollView.disableLayout = NO;
-        
-    if (_editingProxyURL) {
-        [self rescanDocumentsScrollingToURL:_editingProxyURL animated:NO];
-
-        [_editingProxyURL release];
-        _editingProxyURL = nil;
-    }
 }
 
 #pragma mark -
@@ -1094,6 +901,11 @@ static id _commonInit(OUIDocumentPicker *self)
 #pragma mark -
 #pragma mark UIActionSheetDelegate
 
+- (void)actionSheetCancel:(UIActionSheet *)actionSheet;
+{
+    // Nothing. Cleanup done in the dismiss hook.
+}
+
 - (void)actionSheet:(UIActionSheet *)actionSheet clickedButtonAtIndex:(NSInteger)buttonIndex;
 {
     // -1 means cancel (clicked out) if you don't have a cancel item
@@ -1134,7 +946,7 @@ static id _commonInit(OUIDocumentPicker *self)
         _dateLabel.hidden = NO;
     }
     
-    [_titleLabel setTitle:[proxy name] forState:UIControlStateNormal];
+    _titleLabel.text = [proxy name];
     _dateLabel.text = [self _dateStringForDocumentProxy:proxy];
 
     _exportButton.enabled = (proxy != nil);
@@ -1151,7 +963,6 @@ static id _commonInit(OUIDocumentPicker *self)
 - (UIView *)prepareToResignInnerToolbarControllerAndReturnParentViewForActivityIndicator:(OUIToolbarViewController *)toolbarViewController;
 {
     [self view];
-    _isInnerController = NO;
     
     _addPushAndFadeAnimations(self, YES/*fade*/, AnimateTitleAndButtons);
     
@@ -1187,11 +998,6 @@ static id _commonInit(OUIDocumentPicker *self)
     // OK for us to do layout again.
     PICKER_DEBUG(@"LAYOUT ENABLED");
     self.previewScrollView.disableLayout = NO;
-    
-    [[NSNotificationCenter defaultCenter] removeObserver:self name:UIKeyboardWillShowNotification object:nil];
-    [[NSNotificationCenter defaultCenter] removeObserver:self name:UIKeyboardDidShowNotification object:nil];
-    [[NSNotificationCenter defaultCenter] removeObserver:self name:UIKeyboardWillHideNotification object:nil];
-    [[NSNotificationCenter defaultCenter] removeObserver:self name:UIKeyboardDidHideNotification object:nil];    
 }
 
 - (void)willBecomeInnerToolbarController:(OUIToolbarViewController *)toolbarViewController animated:(BOOL)animated;
@@ -1223,13 +1029,6 @@ static id _commonInit(OUIDocumentPicker *self)
     // OK for us to do layout again.
     PICKER_DEBUG(@"LAYOUT ENABLED");
     self.previewScrollView.disableLayout = NO;
-
-    [[NSNotificationCenter defaultCenter] addObserver:self selector:@selector(keyboardWillShow:) name:UIKeyboardWillShowNotification object:nil];
-    [[NSNotificationCenter defaultCenter] addObserver:self selector:@selector(keyboardDidShow:) name:UIKeyboardDidShowNotification object:nil];
-    [[NSNotificationCenter defaultCenter] addObserver:self selector:@selector(keyboardWillHide:) name:UIKeyboardWillHideNotification object:nil];
-    [[NSNotificationCenter defaultCenter] addObserver:self selector:@selector(keyboardDidHide:) name:UIKeyboardDidHideNotification object:nil];
-
-    _isInnerController = YES;
 }
 
 - (BOOL)isEditingViewController;
@@ -1464,10 +1263,8 @@ static NSDate *_dayOffset(NSDate *date, NSInteger offset)
 
 - (void)_documentProxyTapped:(OUIDocumentProxy *)proxy;
 {
-    // Tapping the selected proxy opens it or commits title edit. Otherwise, we want to scroll it into view.
-    if (_titleEditingField && !_titleEditingField.hidden)
-        [_titleEditingField resignFirstResponder];
-    else if (proxy == _previewScrollView.selectedProxy)
+    // Tapping the selected proxy opens it. Otherwise, we want to scroll it into view.
+    if (proxy == _previewScrollView.selectedProxy)
         [_proxyTappedTarget performSelector:_proxyTappedAction withObject:proxy];
     else
         [_previewScrollView snapToProxy:proxy animated:YES];
@@ -1613,177 +1410,6 @@ typedef struct {
     free(ctx);
 }
 
-- (CAMediaTimingFunction *)_caMediaTimingFunctionForUIViewAnimationCurve:(UIViewAnimationCurve)uiViewAnimationCurve;
-{
-    NSString *mediaTimingFunctionName = nil;
-    switch (uiViewAnimationCurve) {
-        case UIViewAnimationCurveEaseInOut:
-            mediaTimingFunctionName = kCAMediaTimingFunctionEaseInEaseOut;
-            break;
-        case UIViewAnimationCurveEaseIn:
-            mediaTimingFunctionName = kCAMediaTimingFunctionEaseIn;
-            break;
-        case UIViewAnimationCurveEaseOut:
-            mediaTimingFunctionName = kCAMediaTimingFunctionEaseOut;
-            break;
-        case UIViewAnimationCurveLinear:
-        default:
-            mediaTimingFunctionName = kCAMediaTimingFunctionLinear;
-            break;
-    }
-    return [CAMediaTimingFunction functionWithName:mediaTimingFunctionName];
-}
-
-- (void)_animateWithKeyboard:(NSNotification *)notification showing:(BOOL)keyboardIsShowing;
-{
-    _previewScrollView.disableLayout = YES;
-    _previewScrollView.disableScroll = keyboardIsShowing;
-    _addPushAndFadeAnimations(self, keyboardIsShowing/*fade*/, AnimateNeighborProxies);
-    
-    CGRect keyboardEndFrame = [[[notification userInfo] objectForKey:UIKeyboardFrameEndUserInfoKey] CGRectValue];
-    keyboardEndFrame = [self.view.superview convertRect:keyboardEndFrame fromView:nil];
-    CGRect availableSpace = [UIScreen mainScreen].applicationFrame;
-    availableSpace = [self.view.superview convertRect:availableSpace fromView:nil];
-    availableSpace.size.height -= keyboardEndFrame.size.height;
-    availableSpace.size.height -= 44;   // toolbar height
-    availableSpace.size.height -= _titleEditingField.frame.size.height;
-    CGFloat spacer = 25;
-    availableSpace.size.height -= spacer*3; // space above proxy view + space between proxy and text view + space between text view and keyboard
-    availableSpace.origin.y = spacer;
-    
-    // animate the selected proxy size to correspond with reduced view size
-    OUIDocumentProxy *centerProxy = _previewScrollView.proxyClosestToCenter;
-    UIView *animatingView = centerProxy.view;
-    
-    CGFloat newHeight = availableSpace.size.height;
-    if (newHeight > animatingView.layer.bounds.size.height)
-        newHeight = animatingView.layer.bounds.size.height;
-    CGFloat proportion = newHeight / animatingView.layer.bounds.size.height;
-    CGFloat newWidth = animatingView.layer.bounds.size.width * proportion;
-    
-    CABasicAnimation *positionAnimation = [CABasicAnimation animationWithKeyPath:@"position"];
-    CGPoint endPosition = CGPointMake(animatingView.layer.position.x, CGRectGetMidY(availableSpace));
-    if (keyboardIsShowing) {
-        positionAnimation.toValue = [NSValue valueWithCGPoint:endPosition];
-    } else {
-        positionAnimation.fromValue = [NSValue valueWithCGPoint:endPosition];
-    }
-    
-    CABasicAnimation *boundsAnimation = [CABasicAnimation animationWithKeyPath:@"bounds.size"];
-    if (keyboardIsShowing) {
-        boundsAnimation.toValue = [NSValue valueWithCGSize:CGSizeMake(newWidth, newHeight)];
-    } else {
-        boundsAnimation.fromValue = [NSValue valueWithCGSize:CGSizeMake(newWidth, newHeight)];
-    }
-    
-    CAAnimationGroup *group = [CAAnimationGroup animation];
-    group.fillMode = kCAFillModeForwards;
-    group.removedOnCompletion = !keyboardIsShowing;
-    group.duration = [[[notification userInfo] objectForKey:UIKeyboardAnimationDurationUserInfoKey] floatValue];
-    group.timingFunction = [self _caMediaTimingFunctionForUIViewAnimationCurve:[[[notification userInfo] objectForKey:UIKeyboardAnimationCurveUserInfoKey] unsignedIntegerValue]];
-    group.animations = [NSArray arrayWithObjects:positionAnimation, boundsAnimation, nil];
-    
-    [animatingView.layer addAnimation:group forKey:PositionAdjustAnimation];
-    
-    CGFloat deltaX = animatingView.layer.bounds.size.width - newWidth;
-    CGFloat deltaY = animatingView.layer.bounds.size.height - newHeight;
-    NSUInteger edge = 0;
-    for (UIView *shadowView in [(OUIDocumentProxyView *)animatingView shadowEdgeViews]) {
-        CALayer *shadowLayer = shadowView.layer;
-        
-        CGRect shadowLayerBounds = shadowLayer.bounds;
-        CGFloat newShadowHeight = shadowLayerBounds.size.height;
-        CGFloat newShadowWidth = shadowLayerBounds.size.width;
-        
-        CGPoint endPosition = CGPointZero;
-        if (edge == 0 /* Bottom */ || edge == 1 /* Top */) {
-            endPosition = CGPointMake(shadowLayer.position.x - deltaX/2, shadowLayer.position.y);
-            newShadowWidth *= proportion;
-        } else if (edge == 2 /* Left */) {
-            endPosition = CGPointMake(shadowLayer.position.x, shadowLayer.position.y - deltaY/2);
-            newShadowHeight *= proportion;
-        } else if (edge == 3 /* Right */) {
-            endPosition = CGPointMake(shadowLayer.position.x - deltaX, shadowLayer.position.y - deltaY/2);
-            newShadowHeight *= proportion;
-        }
-        
-        CABasicAnimation *shadowPositionAnimation = [CABasicAnimation animationWithKeyPath:@"position"];
-        if (keyboardIsShowing) {
-            shadowPositionAnimation.toValue = [NSValue valueWithCGPoint:endPosition];
-        } else {
-            shadowPositionAnimation.fromValue = [NSValue valueWithCGPoint:endPosition];
-        }
-        
-        CABasicAnimation *shadowBoundsAnimation = [CABasicAnimation animationWithKeyPath:@"bounds.size"];
-        if (keyboardIsShowing) {
-            shadowBoundsAnimation.toValue = [NSValue valueWithCGSize:CGSizeMake(newShadowWidth, newShadowHeight)];
-        } else {
-            shadowBoundsAnimation.fromValue = [NSValue valueWithCGSize:CGSizeMake(newShadowWidth, newShadowHeight)];
-        }
-        
-        CAAnimationGroup *shadowGroup = [CAAnimationGroup animation];
-        shadowGroup.fillMode = kCAFillModeForwards;
-        shadowGroup.removedOnCompletion = !keyboardIsShowing;
-        shadowGroup.duration = [[[notification userInfo] objectForKey:UIKeyboardAnimationDurationUserInfoKey] floatValue];
-        shadowGroup.timingFunction = [self _caMediaTimingFunctionForUIViewAnimationCurve:[[[notification userInfo] objectForKey:UIKeyboardAnimationCurveUserInfoKey] unsignedIntegerValue]];
-        shadowGroup.animations = [NSArray arrayWithObjects:shadowPositionAnimation, shadowBoundsAnimation, nil];
-        
-        [shadowLayer addAnimation:shadowGroup forKey:PositionAdjustAnimation];
-        
-        edge++;
-    }
-    
-    // animate the document date label and actions buttons
-    [UIView beginAnimations:@"layout document date label and action buttons during keyboard show animation" context:nil];
-    {
-        [UIView setAnimationDuration:[[[notification userInfo] objectForKey:UIKeyboardAnimationDurationUserInfoKey] floatValue]];
-        [UIView setAnimationCurve:[[[notification userInfo] objectForKey:UIKeyboardAnimationCurveUserInfoKey] intValue]];
-        if (keyboardIsShowing) {
-            CGPoint _titleEditingFieldOrigin = CGPointMake(_titleEditingField.frame.origin.x, CGRectGetMinY(keyboardEndFrame) - _titleEditingField.frame.size.height - spacer);
-            _titleEditingField.frame = (CGRect){.origin = _titleEditingFieldOrigin, .size = _titleEditingField.frame.size};
-        } else {
-            CGRect titleEditingFieldFrame = [_titleEditingField frame];
-            titleEditingFieldFrame.origin.x = CGRectGetMidX(_titleLabel.frame) - titleEditingFieldFrame.size.width/2;
-            titleEditingFieldFrame.origin.y = CGRectGetMidY(_titleLabel.frame) - titleEditingFieldFrame.size.height/2;
-            _titleEditingField.frame = titleEditingFieldFrame;
-        }
-    }
-    [UIView commitAnimations];
-}
-
-- (NSURL *)_renameProxy:(OUIDocumentProxy *)proxy toName:(NSString *)name type:(NSString *)documentUTI rescanDocuments:(BOOL)rescanDocuments;
-{
-    CFStringRef extension = UTTypeCopyPreferredTagWithClass((CFStringRef)documentUTI, kUTTagClassFilenameExtension);
-    if (!extension)
-        OBRequestConcreteImplementation(self, _cmd); // UTI not registered in the Info.plist?
-    
-    NSString *directory = [[self class] userDocumentsDirectory];
-    NSUInteger emptyCounter = 0;
-    NSString *safePath = _availablePath(directory, name, (NSString *)extension, &emptyCounter);
-    CFRelease(extension);
-    
-    NSFileManager *fileManager = [NSFileManager defaultManager];
-    NSURL *oldURL = [proxy url];
-    NSError *error = nil;
-    if (![fileManager moveItemAtPath:[oldURL path] toPath:safePath error:&error]) {
-        NSLog(@"Unable to copy %@ to %@: %@", [oldURL path], safePath, [error toPropertyList]);
-        return [proxy url];
-    }
-    NSDictionary *attributes = [fileManager attributesOfItemAtPath:safePath error:NULL];
-    if (attributes != nil) {
-        NSUInteger mode = [attributes filePosixPermissions];
-        if ((mode & S_IWUSR) == 0) {
-            mode |= S_IWUSR;
-            [fileManager setAttributes:[NSDictionary dictionaryWithObject:[NSNumber numberWithUnsignedInteger:mode] forKey:NSFilePosixPermissions] ofItemAtPath:safePath error:NULL]; // Not bothering to check for errors:  if this fails, we'll find out when it matters
-        }
-    }
-    
-    NSURL *newURL = [NSURL fileURLWithPath:safePath];
-    if (rescanDocuments)
-        [self rescanDocumentsScrollingToURL:newURL];
-    
-    return newURL;
-}
 
 @end
 

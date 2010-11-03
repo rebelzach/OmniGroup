@@ -12,7 +12,6 @@
 #import <OmniBase/assertions.h>
 #import <OmniBase/macros.h>
 #import <OmniBase/rcsid.h>
-#import <OmniBase/OBUtilities.h>
 
 #import <OmniBase/OBObject.h>
 #if !defined(TARGET_OS_IPHONE) || !TARGET_OS_IPHONE

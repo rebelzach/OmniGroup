@@ -52,25 +52,17 @@ typedef enum {
     OFRelativeDateParserPastRelativity = 1, // "last"
 } OFRelativeDateParserRelativity;
 
-static NSCalendar *_defaultCalendar(void)
-{
-    // Not caching in case the time zone changes.
-    NSCalendar *calendar = [[[NSCalendar alloc] initWithCalendarIdentifier:NSGregorianCalendar] autorelease];
-    [calendar setTimeZone:[NSTimeZone localTimeZone]];
-    return calendar;
-}
-
-@interface OFRelativeDateParser (/*Private*/)
-- (int)_multiplierForModifer:(int)modifier;
+@interface OFRelativeDateParser (Private)
+-(int)_multiplierForModifer:(int)modifier;
 - (NSUInteger)_monthIndexForString:(NSString *)token;
 - (NSUInteger)_weekdayIndexForString:(NSString *)token;
-- (NSDate *)_modifyDate:(NSDate *)date withWeekday:(NSUInteger)requestedWeekday withModifier:(OFRelativeDateParserRelativity)modifier calendar:(NSCalendar *)calendar;
+- (NSDate *)_modifyDate:(NSDate *)date withWeekday:(NSUInteger)requestedWeekday withModifier:(OFRelativeDateParserRelativity)modifier;
 - (void)_addToComponents:(NSDateComponents *)components codeString:(DPCode)dpCode codeInt:(int)codeInt withMultiplier:(int)multiplier;
 - (NSInteger)_determineYearForMonth:(NSUInteger)month withModifier:(OFRelativeDateParserRelativity)modifier fromCurrentMonth:(NSUInteger)currentMonth fromGivenYear:(NSInteger)givenYear;
-- (NSDateComponents *)_parseTime:(NSString *)timeString withDate:(NSDate *)date withTimeFormat:(NSString *)timeFormat calendar:(NSCalendar *)calendar;
-- (NSDate *)_parseFormattedDate:(NSString *)dateString withDate:(NSDate *)date withShortDateFormat:(NSString *)shortFormat withMediumDateFormat:(NSString *)mediumFormat withLongDateFormat:(NSString *)longFormat withseparator:(NSString *)separator calendar:(NSCalendar *)calendar;
+- (NSDateComponents *)parseTime:(NSString *)timeString withDate:(NSDate *)date withTimeFormat:(NSString *)timeFormat;
+- (NSDate *)parseFormattedDate:(NSString *)dateString withDate:(NSDate *)date withShortDateFormat:(NSString *)shortFormat withMediumDateFormat:(NSString *)mediumFormat withLongDateFormat:(NSString *)longFormat withseparator:(NSString *)separator;
 - (DateSet)_dateSetFromArray:(NSArray *)dateComponents withPositions:(DatePosition)datePosition;
-- (NSDate *)_parseDateNaturalLangauge:(NSString *)dateString withDate:(NSDate *)date timeSpecific:(BOOL *)timeSpecific useEndOfDuration:(BOOL)useEndOfDuration calendar:(NSCalendar *)calendar error:(NSError **)error;
+- (NSDate *)parseDateNaturalLangauge:(NSString *)dateString withDate:(NSDate *)date timeSpecific:(BOOL *)timeSpecific useEndOfDuration:(BOOL)useEndOfDuration error:(NSError **)error;
 - (BOOL)_stringMatchesTime:(NSString *)firstString optionalSecondString:(NSString *)secondString withTimeFormat:(NSString *)timeFormat;
 - (BOOL)_stringIsNumber:(NSString *)string;
 @end
@@ -79,16 +71,9 @@ static NSCalendar *_defaultCalendar(void)
 // creates a new relative date parser with your current locale
 + (OFRelativeDateParser *)sharedParser;
 {
-    if (!sharedParser) {
+    if (!sharedParser) 
 	sharedParser = [[OFRelativeDateParser alloc] initWithLocale:[NSLocale currentLocale]];
-	[[NSNotificationCenter defaultCenter] addObserver:self selector:@selector(currentLocaleDidChange:) name:NSCurrentLocaleDidChangeNotification object:nil];
-    }
     return sharedParser;
-}
-
-+ (void)currentLocaleDidChange:(NSNotification *)notification;
-{
-    [sharedParser setLocale:[NSLocale currentLocale]];
 }
 
 + (void)initialize;
@@ -159,11 +144,10 @@ static NSCalendar *_defaultCalendar(void)
 		 nil];
     
     // english 
+    [NSDateFormatter setDefaultFormatterBehavior:NSDateFormatterBehavior10_4]; 
     NSDateFormatter *formatter = [[[NSDateFormatter alloc] init] autorelease]; 
-    OBASSERT([formatter formatterBehavior] == NSDateFormatterBehavior10_4);
     NSLocale *en_US = [[NSLocale alloc] initWithLocaleIdentifier:@"en_US"];
     [formatter setLocale:en_US];
-    
     englishWeekdays = [[formatter weekdaySymbols] copy];
     englishShortdays = [[formatter shortWeekdaySymbols] copy];
     [en_US release];
@@ -199,10 +183,9 @@ static NSCalendar *_defaultCalendar(void)
 	[_locale release];
 	_locale = [locale retain];
 	
-	// Rebuild the weekday/month name arrays for a new locale
-	NSDateFormatter *formatter = [[[NSDateFormatter alloc] init] autorelease];
-        OBASSERT([formatter formatterBehavior] == NSDateFormatterBehavior10_4);
-        
+	//remake the weekday/month name arrays for a new locale
+	[NSDateFormatter setDefaultFormatterBehavior:NSDateFormatterBehavior10_4]; 
+	NSDateFormatter *formatter = [[[NSDateFormatter alloc] init] autorelease]; 
 	[formatter setLocale:locale];
 	
 	[_weekdays release];
@@ -224,38 +207,35 @@ static NSCalendar *_defaultCalendar(void)
 	   forString:(NSString *)string
    	       error:(NSError **)error;
 {
-    return [self getDateValue:date forString:string useEndOfDuration:NO defaultTimeDateComponents:nil calendar:nil error:error];
+    return [self getDateValue:date forString:string useEndOfDuration:NO defaultTimeDateComponents:nil error:error];
 }
 
-- (BOOL)getDateValue:(NSDate **)date forString:(NSString *)string useEndOfDuration:(BOOL)useEndOfDuration defaultTimeDateComponents:(NSDateComponents *)defaultTimeDateComponents calendar:(NSCalendar *)calendar error:(NSError **)error;
+- (BOOL)getDateValue:(NSDate **)date forString:(NSString *)string useEndOfDuration:(BOOL)useEndOfDuration defaultTimeDateComponents:(NSDateComponents *)defaultTimeDateComponents error:(NSError **)error;
 {
-    if (!calendar)
-        calendar = _defaultCalendar();
-
+    [NSDateFormatter setDefaultFormatterBehavior:NSDateFormatterBehavior10_4]; 
     NSDateFormatter *formatter = [[[NSDateFormatter alloc] init] autorelease]; 
-    OBASSERT([formatter formatterBehavior] == NSDateFormatterBehavior10_4);
-
-    [formatter setCalendar:calendar];
-    [formatter setLocale:_locale];
-    
     [formatter setDateStyle:NSDateFormatterShortStyle]; 
     [formatter setTimeStyle:NSDateFormatterNoStyle]; 
-    NSString *shortFormat = [[[formatter dateFormat] copy] autorelease];
-    
+    NSMutableString *shortFormat =
+    [NSMutableString stringWithString:[formatter dateFormat]];
     [formatter setDateStyle:NSDateFormatterMediumStyle]; 
-    NSString *mediumFormat = [[[formatter dateFormat] copy] autorelease];
-    
+    NSMutableString *mediumFormat =
+    [NSMutableString stringWithString:[formatter dateFormat]];
     [formatter setDateStyle:NSDateFormatterLongStyle]; 
-    NSString *longFormat = [[[formatter dateFormat] copy] autorelease];
+    NSMutableString *longFormat =
+    [NSMutableString stringWithString:[formatter dateFormat]];
+    
+    
     
     [formatter setDateStyle:NSDateFormatterNoStyle]; 
     [formatter setTimeStyle:NSDateFormatterShortStyle]; 
-    NSString *timeFormat = [[[formatter dateFormat] copy] autorelease]; 
+    NSString *timeFormat = [formatter dateFormat]; 
     
     return [self getDateValue:date 
 		    forString:string 
 	     fromStartingDate:[NSDate date] 
-                     calendar:calendar
+		 withTimeZone:[NSTimeZone localTimeZone] 
+       withCalendarIdentifier:NSGregorianCalendar 
 	  withShortDateFormat:shortFormat
 	 withMediumDateFormat:mediumFormat
 	   withLongDateFormat:longFormat
@@ -268,7 +248,8 @@ static NSCalendar *_defaultCalendar(void)
 - (BOOL)getDateValue:(NSDate **)date 
 	   forString:(NSString *)string 
     fromStartingDate:(NSDate *)startingDate 
-            calendar:(NSCalendar *)calendar
+	withTimeZone:(NSTimeZone *)timeZone 
+withCalendarIdentifier:(NSString *)nsLocaleCalendarKey 
  withShortDateFormat:(NSString *)shortFormat 
 withMediumDateFormat:(NSString *)mediumFormat 
   withLongDateFormat:(NSString *)longFormat 
@@ -278,7 +259,8 @@ withMediumDateFormat:(NSString *)mediumFormat
     return [self getDateValue:date 
 		    forString:string 
 	     fromStartingDate:startingDate 
-                     calendar:calendar 
+		 withTimeZone:timeZone 
+       withCalendarIdentifier:nsLocaleCalendarKey 
 	  withShortDateFormat:shortFormat
 	 withMediumDateFormat:mediumFormat
 	   withLongDateFormat:longFormat
@@ -291,7 +273,8 @@ withMediumDateFormat:(NSString *)mediumFormat
 - (BOOL)getDateValue:(NSDate **)date 
 	   forString:(NSString *)string 
     fromStartingDate:(NSDate *)startingDate 
-            calendar:(NSCalendar *)calendar
+	withTimeZone:(NSTimeZone *)timeZone 
+withCalendarIdentifier:(NSString *)nsLocaleCalendarKey 
  withShortDateFormat:(NSString *)shortFormat 
 withMediumDateFormat:(NSString *)mediumFormat 
   withLongDateFormat:(NSString *)longFormat 
@@ -307,8 +290,10 @@ defaultTimeDateComponents:(NSDateComponents *)defaultTimeDateComponents
 	return YES;
     }
     
-    if (!calendar)
-        calendar = _defaultCalendar();
+    // set the calendar according to the requested calendar and time zone
+    currentCalendar = [[[NSCalendar alloc] initWithCalendarIdentifier:nsLocaleCalendarKey] autorelease];
+    if ( timeZone != nil )
+	[currentCalendar setTimeZone:timeZone];
     
     string = [[string lowercaseString] stringByCollapsingWhitespaceAndRemovingSurroundingWhitespace];
     NSString *dateString = nil;
@@ -437,14 +422,14 @@ defaultTimeDateComponents:(NSDateComponents *)defaultTimeDateComponents
 		separator = @" ";
 	    }
 	    
-	    *date = [self _parseFormattedDate:dateString withDate:startingDate withShortDateFormat:shortFormat withMediumDateFormat:mediumFormat withLongDateFormat:longFormat withseparator:separator calendar:calendar];
+	    *date = [self parseFormattedDate:dateString withDate:startingDate withShortDateFormat:shortFormat withMediumDateFormat:mediumFormat withLongDateFormat:longFormat withseparator:separator];
 	} else 
-	    *date = [self _parseDateNaturalLangauge:dateString withDate:startingDate timeSpecific:&timeSpecific useEndOfDuration:useEndOfDuration calendar:calendar error:error];
+	    *date = [self parseDateNaturalLangauge:dateString withDate:startingDate timeSpecific:&timeSpecific useEndOfDuration:useEndOfDuration error:error];
     } else 
 	*date = startingDate;
     
     if (timeString != nil)  
-	*date = [calendar dateFromComponents:[self _parseTime:timeString withDate:*date withTimeFormat:timeFormat calendar:calendar]];
+	*date = [currentCalendar dateFromComponents:[self parseTime:timeString withDate:*date withTimeFormat:timeFormat]];
     else {
 	static OFRegularExpression *hourCodeRegex;
 	if (!hourCodeRegex)
@@ -452,11 +437,11 @@ defaultTimeDateComponents:(NSDateComponents *)defaultTimeDateComponents
 	OFRegularExpressionMatch *hourCode = [hourCodeRegex matchInString:string];
 	if (!hourCode && *date && !timeSpecific) {
 	    //NSLog(@"no date information, and no hour codes, set to midnight");
-	    NSDateComponents *defaultTime = [calendar components:NSDayCalendarUnit|NSMonthCalendarUnit|NSYearCalendarUnit|NSEraCalendarUnit fromDate:*date];
+	    NSDateComponents *defaultTime = [currentCalendar components:NSDayCalendarUnit|NSMonthCalendarUnit|NSYearCalendarUnit|NSEraCalendarUnit fromDate:*date];
 	    [defaultTime setHour:[defaultTimeDateComponents hour]];
 	    [defaultTime setMinute:[defaultTimeDateComponents minute]];
 	    [defaultTime setSecond:[defaultTimeDateComponents second]];
-	    *date = [calendar dateFromComponents:defaultTime];
+	    *date = [currentCalendar dateFromComponents:defaultTime];
 	}
     }
 #ifdef DEBUG_date
@@ -471,34 +456,112 @@ defaultTimeDateComponents:(NSDateComponents *)defaultTimeDateComponents
 
 - (NSString *)stringForDate:(NSDate *)date withDateFormat:(NSString *)dateFormat withTimeFormat:(NSString *)timeFormat;
 {
-    
-    return [self stringForDate:date withDateFormat:dateFormat withTimeFormat:timeFormat calendar:nil];
+    return [self stringForDate:date withDateFormat:dateFormat withTimeFormat:timeFormat withTimeZone:[NSTimeZone localTimeZone] withCalendarIdentifier:NSGregorianCalendar];
 }
 
-- (NSString *)stringForDate:(NSDate *)date withDateFormat:(NSString *)dateFormat withTimeFormat:(NSString *)timeFormat calendar:(NSCalendar *)calendar;
+- (NSString *)stringForDate:(NSDate *)date withDateFormat:(NSString *)dateFormat withTimeFormat:(NSString *)timeFormat withTimeZone:(NSTimeZone *)timeZone withCalendarIdentifier:(NSString *)nsLocaleCalendarKey ;
 {
-    if (!calendar)
-        calendar = _defaultCalendar();
-
-    NSDateComponents *components = [calendar components:unitFlags fromDate:date];
-
+    // set the calendar according to the requested calendar and time zone
+    currentCalendar = [[NSCalendar alloc] initWithCalendarIdentifier:nsLocaleCalendarKey];
+    if ( timeZone != nil )
+	[currentCalendar setTimeZone:timeZone];
+    NSDateComponents *components = [currentCalendar components:unitFlags fromDate:date];
+    [NSDateFormatter setDefaultFormatterBehavior:NSDateFormatterBehavior10_4];
     NSDateFormatter *formatter = [[NSDateFormatter alloc] init];
-    OBASSERT([formatter formatterBehavior] == NSDateFormatterBehavior10_4); // Linked on 10.6
-    
-    [formatter setCalendar:calendar];
-    [formatter setLocale:_locale];
     [formatter setDateFormat:dateFormat];
-    
     if ([components hour] != NSUndefinedDateComponent) 
 	[formatter setDateFormat:[[dateFormat stringByAppendingString:@" "] stringByAppendingString:timeFormat]];
     NSString *result = [formatter stringFromDate:date];
     [formatter release];
-
+    [currentCalendar release];
     return result;
 }
 
-#pragma mark -
-#pragma mark Private
+@end
+
+@implementation OFRelativeDateParser (OFInternalAPI)
+
+- (DatePosition)_dateElementOrderFromFormat:(NSString *)dateFormat;
+{
+    OBASSERT(dateFormat);
+    
+    DatePosition datePosition;
+    datePosition.day = 1;
+    datePosition.month = 2;
+    datePosition.year = 3;
+    datePosition.separator = @" ";
+    
+    static OFRegularExpression *mdyRegex;
+    if (!mdyRegex)
+	mdyRegex = [[OFRegularExpression alloc] initWithString:@"[mM]+(\\s?)(\\S?)(\\s?)d+(\\s?)(\\S?)(\\s?)y+"];
+    OFRegularExpressionMatch *match = [mdyRegex matchInString:dateFormat];
+    if (match) {
+	datePosition.day = 2;
+	datePosition.month = 1;
+	datePosition.year = 3;
+	datePosition.separator = [match subexpressionAtIndex:0];
+	return datePosition;
+    }     
+    static OFRegularExpression *dmyRegex;
+    if (!dmyRegex)
+	dmyRegex = [[OFRegularExpression alloc] initWithString:@"d+(\\s?)(\\S?)(\\s?)[mM]+(\\s?)(\\S?)(\\s?)y+"];
+    match = [dmyRegex matchInString:dateFormat];
+    if (match) {
+	datePosition.day = 1;
+	datePosition.month = 2;
+	datePosition.year = 3;
+	datePosition.separator = [match subexpressionAtIndex:0];
+	return datePosition;
+    }
+    
+    static OFRegularExpression *ymdRegex;
+    if (!ymdRegex)
+	ymdRegex = [[OFRegularExpression alloc] initWithString:@"y+(\\s?)(\\S?)(\\s?)[mM]+(\\s?)(\\S?)(\\s?)d+"];
+    match = [ymdRegex matchInString:dateFormat];
+    if (match) {
+	datePosition.day = 3;
+	datePosition.month = 2;
+	datePosition.year = 1;
+	datePosition.separator = [match subexpressionAtIndex:0];
+	return datePosition;
+    }
+    
+    static OFRegularExpression *ydmRegex;
+    if (!ydmRegex)
+	ydmRegex = [[OFRegularExpression alloc] initWithString:@"y+(\\s?)(\\S?)(\\s?)d+(\\s?)(\\S?)(\\s?)[mM]+"];
+    match = [ydmRegex matchInString:dateFormat];
+    if (match) {
+	datePosition.day = 2;
+	datePosition.month = 3;
+	datePosition.year = 1;
+	datePosition.separator = [match subexpressionAtIndex:0];
+	return datePosition;
+    }
+    
+    // log inavlid dates and use the american default, for now
+    
+    {
+	[NSDateFormatter setDefaultFormatterBehavior:NSDateFormatterBehavior10_4]; 
+	NSDateFormatter *formatter = [[[NSDateFormatter alloc] init] autorelease]; 
+	[formatter setDateStyle:NSDateFormatterShortStyle]; 
+	[formatter setTimeStyle:NSDateFormatterNoStyle]; 
+	NSMutableString *shortFormat =
+	[NSMutableString stringWithString:[formatter dateFormat]];
+	[formatter setDateStyle:NSDateFormatterMediumStyle]; 
+	NSMutableString *mediumFormat =
+	[NSMutableString stringWithString:[formatter dateFormat]];
+	[formatter setDateStyle:NSDateFormatterLongStyle]; 
+	NSMutableString *longFormat =
+	[NSMutableString stringWithString:[formatter dateFormat]];
+		
+	NSLog(@"**PLEASE REPORT THIS LINE TO: omnifocus@omnigroup.com | Unparseable Custom Date Format. Date Format trying to parse is: %@; Short Format: %@; Medium Format: %@; Long Format: %@", dateFormat, shortFormat, mediumFormat, longFormat);
+    }
+    return datePosition;
+}
+
+@end
+
+@implementation OFRelativeDateParser (Private)
 
 - (BOOL)_stringIsNumber:(NSString *)string;
 {
@@ -553,7 +616,7 @@ defaultTimeDateComponents:(NSDateComponents *)defaultTimeDateComponents
     return NO;
 }
 
-- (NSDateComponents *)_parseTime:(NSString *)timeString withDate:(NSDate *)date withTimeFormat:(NSString *)timeFormat calendar:(NSCalendar *)calendar;
+- (NSDateComponents *)parseTime:(NSString *)timeString withDate:(NSDate *)date withTimeFormat:(NSString *)timeFormat;
 {
     timeString = [timeString stringByCollapsingWhitespaceAndRemovingSurroundingWhitespace];
     NSScanner *timeScanner = [NSScanner localizedScannerWithString:timeString];
@@ -645,7 +708,7 @@ defaultTimeDateComponents:(NSDateComponents *)defaultTimeDateComponents
     if (hours == -1)
 	return nil;
     
-    NSDateComponents *components = [calendar components:unitFlags fromDate:date];
+    NSDateComponents *components = [currentCalendar components:unitFlags fromDate:date];
     if (seconds != -1)
 	[components setSecond:seconds];
     else
@@ -662,14 +725,12 @@ defaultTimeDateComponents:(NSDateComponents *)defaultTimeDateComponents
     return components;
 }
 
-- (NSDate *)_parseFormattedDate:(NSString *)dateString withDate:(NSDate *)date withShortDateFormat:(NSString *)shortFormat withMediumDateFormat:(NSString *)mediumFormat withLongDateFormat:(NSString *)longFormat withseparator:(NSString *)separator calendar:(NSCalendar *)calendar;
+- (NSDate *)parseFormattedDate:(NSString *)dateString withDate:(NSDate *)date withShortDateFormat:(NSString *)shortFormat withMediumDateFormat:(NSString *)mediumFormat withLongDateFormat:(NSString *)longFormat withseparator:(NSString *)separator;
 {
-    OBPRECONDITION(calendar);
-    
 #ifdef DEBUG_date
     NSLog(@"parsing formatted dateString: %@", dateString );
 #endif
-    NSDateComponents *currentComponents = [calendar components:unitFlags fromDate:date]; // the given date as components
+    NSDateComponents *currentComponents = [currentCalendar components:unitFlags fromDate:date]; // the given date as components
     
     OBASSERT(separator);
     NSMutableArray *dateComponents = [NSMutableArray arrayWithArray:[dateString componentsSeparatedByString:separator]];
@@ -782,7 +843,7 @@ defaultTimeDateComponents:(NSDateComponents *)defaultTimeDateComponents
 #ifdef DEBUG_date
     NSLog(@"year: %d, month: %d, day: %d", [currentComponents year], [currentComponents month], [currentComponents day]);
 #endif
-    date = [calendar dateFromComponents:currentComponents];
+    date = [currentCalendar dateFromComponents:currentComponents];
     return date;
 }
 
@@ -954,13 +1015,13 @@ defaultTimeDateComponents:(NSDateComponents *)defaultTimeDateComponents
     return dateSet;
 }
 
-- (NSDate *)_parseDateNaturalLangauge:(NSString *)dateString withDate:(NSDate *)date timeSpecific:(BOOL *)timeSpecific useEndOfDuration:(BOOL)useEndOfDuration calendar:(NSCalendar *)calendar error:(NSError **)error;
+- (NSDate *)parseDateNaturalLangauge:(NSString *)dateString withDate:(NSDate *)date timeSpecific:(BOOL *)timeSpecific useEndOfDuration:(BOOL)useEndOfDuration error:(NSError **)error;
 {
 #ifdef DEBUG_date
     NSLog(@"Parse Natural Language Date String: \"%@\"", dateString );
 #endif
     OFRelativeDateParserRelativity modifier = OFRelativeDateParserNoRelativity; // look for a modifier as the first part of the string
-    NSDateComponents *currentComponents = [calendar components:unitFlags fromDate:date]; // the given date as components
+    NSDateComponents *currentComponents = [currentCalendar components:unitFlags fromDate:date]; // the given date as components
     
 #ifdef DEBUG_date
     NSLog(@"PRE comps. m: %d, d: %d, y: %d", [currentComponents month], [currentComponents day], [currentComponents year]);
@@ -1070,8 +1131,8 @@ defaultTimeDateComponents:(NSDateComponents *)defaultTimeDateComponents
 #ifdef DEBUG_date
 			NSLog(@"found: %@, replaced with: %@ from dict: %@", [specialCaseTimeNames objectForKey:match], replacementString, keywordDictionary);
 #endif			   
-			date = [self _parseDateNaturalLangauge:replacementString withDate:date timeSpecific:timeSpecific useEndOfDuration:useEndOfDuration calendar:calendar error:error];
-			currentComponents = [calendar components:unitFlags fromDate:date]; // update the components
+			date = [self parseDateNaturalLangauge:replacementString withDate:date timeSpecific:timeSpecific useEndOfDuration:useEndOfDuration error:error];
+			currentComponents = [currentCalendar components:unitFlags fromDate:date]; // update the components
 #ifdef DEBUG_date
 			NSLog(@"RETURN from replacement call");
 #endif	
@@ -1162,8 +1223,8 @@ defaultTimeDateComponents:(NSDateComponents *)defaultTimeDateComponents
 	    [scanner scanCharactersFromSet:[NSCharacterSet whitespaceCharacterSet] intoString:NULL];
 	    
 	    if (weekday != -1) {
-		date = [self _modifyDate:date withWeekday:weekday withModifier:modifier calendar:calendar];
-		currentComponents = [calendar components:unitFlags fromDate:date];
+		date = [self _modifyDate:date withWeekday:weekday withModifier:modifier];
+		currentComponents = [currentCalendar components:unitFlags fromDate:date];
 		weekday = -1;
 		modifier = 0;
 		multiplier = [self _multiplierForModifer:modifier];
@@ -1277,8 +1338,8 @@ defaultTimeDateComponents:(NSDateComponents *)defaultTimeDateComponents
 	[scanner scanCharactersFromSet:[NSCharacterSet whitespaceCharacterSet] intoString:NULL];
 	
 	if (weekday != -1) {
-	    date = [self _modifyDate:date withWeekday:weekday withModifier:modifier calendar:calendar];
-	    currentComponents = [calendar components:unitFlags fromDate:date];
+	    date = [self _modifyDate:date withWeekday:weekday withModifier:modifier];
+	    currentComponents = [currentCalendar components:unitFlags fromDate:date];
 	    weekday = -1;
 	    modifier = 0;
 	    multiplier = [self _multiplierForModifer:modifier];
@@ -1364,14 +1425,14 @@ defaultTimeDateComponents:(NSDateComponents *)defaultTimeDateComponents
     if (year != -1) 
 	[currentComponents setYear:year];
     
-    date = [calendar dateFromComponents:currentComponents];
+    date = [currentCalendar dateFromComponents:currentComponents];
 #ifdef DEBUG_date    
     NSLog(@"comps. m: %d, d: %d, y: %d", [currentComponents month], [currentComponents day], [currentComponents year]);
     NSLog( @"date before modifying with the components: %@", date) ;
 #endif
 
     // componetsToAdd is all of the collected relative date codes
-    date = [calendar dateByAddingComponents:componentsToAdd toDate:date options:0];
+    date = [currentCalendar dateByAddingComponents:componentsToAdd toDate:date options:0];
     return date;
 }
 
@@ -1444,13 +1505,10 @@ defaultTimeDateComponents:(NSDateComponents *)defaultTimeDateComponents
     return givenYear;
 }
 
-- (NSDate *)_modifyDate:(NSDate *)date withWeekday:(NSUInteger)requestedWeekday withModifier:(OFRelativeDateParserRelativity)modifier calendar:(NSCalendar *)calendar;
+- (NSDate *)_modifyDate:(NSDate *)date withWeekday:(NSUInteger)requestedWeekday withModifier:(OFRelativeDateParserRelativity)modifier;
 {
-    OBPRECONDITION(date);
-    OBPRECONDITION(calendar);
-    
     requestedWeekday+=1; // add one to the index since weekdays are 1 based, but we detect them zero-based
-    NSDateComponents *weekdayComp = [calendar components:NSWeekdayCalendarUnit fromDate:date];
+    NSDateComponents *weekdayComp = [currentCalendar components:NSWeekdayCalendarUnit fromDate:date];
     NSDateComponents *components = [[NSDateComponents alloc] init];
     NSUInteger currentWeekday = [weekdayComp weekday];
     
@@ -1508,7 +1566,7 @@ defaultTimeDateComponents:(NSDateComponents *)defaultTimeDateComponents
 	[components setDay:(requestedWeekday- currentWeekday)+dayModification];
     }
     
-    NSDate *result = [calendar dateByAddingComponents:components toDate:date options:0];; //return next week
+    NSDate *result = [currentCalendar dateByAddingComponents:components toDate:date options:0];; //return next week
     [components release];
     return result;
 }
@@ -1565,86 +1623,3 @@ defaultTimeDateComponents:(NSDateComponents *)defaultTimeDateComponents
     }
 }
 @end
-
-@implementation OFRelativeDateParser (OFInternalAPI)
-
-- (DatePosition)_dateElementOrderFromFormat:(NSString *)dateFormat;
-{
-    OBASSERT(dateFormat);
-    
-    DatePosition datePosition;
-    datePosition.day = 1;
-    datePosition.month = 2;
-    datePosition.year = 3;
-    datePosition.separator = @" ";
-    
-    static OFRegularExpression *mdyRegex;
-    if (!mdyRegex)
-	mdyRegex = [[OFRegularExpression alloc] initWithString:@"[mM]+(\\s?)(\\S?)(\\s?)d+(\\s?)(\\S?)(\\s?)y+"];
-    OFRegularExpressionMatch *match = [mdyRegex matchInString:dateFormat];
-    if (match) {
-	datePosition.day = 2;
-	datePosition.month = 1;
-	datePosition.year = 3;
-	datePosition.separator = [match subexpressionAtIndex:0];
-	return datePosition;
-    }     
-    static OFRegularExpression *dmyRegex;
-    if (!dmyRegex)
-	dmyRegex = [[OFRegularExpression alloc] initWithString:@"d+(\\s?)(\\S?)(\\s?)[mM]+(\\s?)(\\S?)(\\s?)y+"];
-    match = [dmyRegex matchInString:dateFormat];
-    if (match) {
-	datePosition.day = 1;
-	datePosition.month = 2;
-	datePosition.year = 3;
-	datePosition.separator = [match subexpressionAtIndex:0];
-	return datePosition;
-    }
-    
-    static OFRegularExpression *ymdRegex;
-    if (!ymdRegex)
-	ymdRegex = [[OFRegularExpression alloc] initWithString:@"y+(\\s?)(\\S?)(\\s?)[mM]+(\\s?)(\\S?)(\\s?)d+"];
-    match = [ymdRegex matchInString:dateFormat];
-    if (match) {
-	datePosition.day = 3;
-	datePosition.month = 2;
-	datePosition.year = 1;
-	datePosition.separator = [match subexpressionAtIndex:0];
-	return datePosition;
-    }
-    
-    static OFRegularExpression *ydmRegex;
-    if (!ydmRegex)
-	ydmRegex = [[OFRegularExpression alloc] initWithString:@"y+(\\s?)(\\S?)(\\s?)d+(\\s?)(\\S?)(\\s?)[mM]+"];
-    match = [ydmRegex matchInString:dateFormat];
-    if (match) {
-	datePosition.day = 2;
-	datePosition.month = 3;
-	datePosition.year = 1;
-	datePosition.separator = [match subexpressionAtIndex:0];
-	return datePosition;
-    }
-    
-    // log inavlid dates and use the american default, for now
-    
-    {
-	NSDateFormatter *formatter = [[[NSDateFormatter alloc] init] autorelease];
-        OBASSERT([formatter formatterBehavior] == NSDateFormatterBehavior10_4);
-        
-	[formatter setDateStyle:NSDateFormatterShortStyle]; 
-	[formatter setTimeStyle:NSDateFormatterNoStyle]; 
-	NSString *shortFormat = [[[formatter dateFormat] copy] autorelease];
-        
-	[formatter setDateStyle:NSDateFormatterMediumStyle]; 
-	NSString *mediumFormat = [[[formatter dateFormat] copy] autorelease];
-        
-	[formatter setDateStyle:NSDateFormatterLongStyle]; 
-	NSString *longFormat = [[[formatter dateFormat] copy] autorelease];
-        
-	NSLog(@"**PLEASE REPORT THIS LINE TO: support@omnigroup.com | Unparseable Custom Date Format. Date Format trying to parse is: %@; Short Format: %@; Medium Format: %@; Long Format: %@", dateFormat, shortFormat, mediumFormat, longFormat);
-    }
-    return datePosition;
-}
-
-@end
-

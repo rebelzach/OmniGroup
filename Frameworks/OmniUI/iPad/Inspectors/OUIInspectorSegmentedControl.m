@@ -161,12 +161,6 @@ static id _commonInit(OUIInspectorSegmentedControl *self)
     return kButtonHeight;
 }
 
-- (void)setEnabled:(BOOL)yn;
-{
-    for (OUIInspectorSegmentedControlButton *button in _segments)
-        [button setEnabled:yn];
-}
-
 #pragma mark -
 #pragma mark UIView subclass
 - (void)layoutSubviews;

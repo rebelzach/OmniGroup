@@ -23,8 +23,6 @@
 + (void)setPlaceholderPreviewImage:(UIImage *)placeholderPreviewImage;
 + (UIImage *)placeholderPreviewImage;
 
-- (NSArray *)shadowEdgeViews;
-
 @property(retain,nonatomic) id <OUIDocumentPreview> preview;
 @property(assign,nonatomic) BOOL selected;
 

@@ -7,10 +7,7 @@
 
 #import "OATestCase.h"
 
-#if !defined(TARGET_OS_IPHONE) || !TARGET_OS_IPHONE
 #import <OmniAppKit/OAApplication.h>
-#endif
-
 #import <OmniBase/OmniBase.h>
 
 RCS_ID("$Id$");
@@ -21,7 +18,6 @@ RCS_ID("$Id$");
 {
     OBINITIALIZE;
     
-#if !defined(TARGET_OS_IPHONE) || !TARGET_OS_IPHONE
     NSApplication *app = [OAApplication sharedApplication];
     
     OATestController *controller = [OATestController sharedController];
@@ -30,12 +26,10 @@ RCS_ID("$Id$");
     OBASSERT([controller isKindOfClass:[OATestController class]]);
     
     [app setDelegate:controller];
-#endif
 }
 
 @end
 
-#if !defined(TARGET_OS_IPHONE) || !TARGET_OS_IPHONE
 @implementation OATestController
 
 - (BOOL)exceptionHandler:(NSExceptionHandler *)sender shouldLogException:(NSException *)exception mask:(NSUInteger)aMask;
@@ -45,4 +39,3 @@ RCS_ID("$Id$");
 }
 
 @end
-#endif

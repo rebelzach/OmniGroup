@@ -16,9 +16,6 @@
 {
     CGFloat _scale;
     BOOL _rotating;
-    
-    BOOL _wantsShadowEdges;
-    NSArray *_shadowEdgeViews;
 }
 
 // DO NOT set this directly for now. Only should be mucked with via GraphViewController and its UIScrollView (or code needs rearranging to support direct mucking)
@@ -26,7 +23,6 @@
 
 // For subclasses;
 - (void)scaleChanged;
-- (void)scrollPositionChanged;
 
 @property(assign,nonatomic) BOOL rotating; // Managed by OUIScalingViewController; you can look, but don't touch.
 
@@ -51,9 +47,5 @@
 - (void)drawScaledContent:(CGRect)rect;
 
 - (NSData *)pdfData;
-
-@property (assign, nonatomic) BOOL wantsShadowEdges;  // Set to YES if you want shadows on the edges
-- (void)updateShadowEdgeViews;
-- (void)setShadowEdgeViewVisibility:(BOOL)visible;
 
 @end

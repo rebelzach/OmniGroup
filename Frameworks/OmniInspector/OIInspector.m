@@ -314,22 +314,6 @@ static OFEnumNameTable *OIVisibilityStateNameTable = nil;
     }
 }
 
-- (BOOL)shouldBeUsedForObject:(id)object;
-{
-    return [[self inspectedObjectsPredicate] evaluateWithObject:object] && [[self shouldBeUsedForObjectPredicate] evaluateWithObject:object];
-}
-
-- (NSPredicate *)shouldBeUsedForObjectPredicate;
-{
-    OBASSERT_NOT_REACHED("Not going to get any love this way.");
-    return nil;
-}
-
-- (void)inspectorDidResize:(OIInspector *)resizedInspector;
-{
-    OBASSERT_NOT_REACHED("This should only be called on inspectors which are ancestors of the resized inspector.");
-}
-
 #pragma mark -
 #pragma mark Debugging
 - (NSMutableDictionary *)debugDictionary;

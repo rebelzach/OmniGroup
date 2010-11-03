@@ -17,6 +17,14 @@
 RCS_ID("$Id$");
 
 #if 0 && defined(DEBUG)
+    #define SHOW_UNDO_INDICATOR 1
+    #define AUTOSAVE_INTERVAL 5
+#else
+    #define SHOW_UNDO_INDICATOR 0
+    #define AUTOSAVE_INTERVAL 15
+#endif
+
+#if 0 && defined(DEBUG)
     #define DEBUG_UNDO(format, ...) NSLog(@"UNDO: " format, ## __VA_ARGS__)
 #else
     #define DEBUG_UNDO(format, ...)
@@ -31,22 +39,10 @@ RCS_ID("$Id$");
 - (void)_undoManagerDidUndoOrRedo:(NSNotification *)note;
 - (void)_undoManagerDidOpenGroup:(NSNotification *)note;
 - (void)_undoManagerWillCloseGroup:(NSNotification *)note;
+- (void)_inspectorDidDismiss:(NSNotification *)note;
 @end
 
 @implementation OUIDocument
-
-+ (CFTimeInterval)autosaveTimeInterval;
-{
-    CFTimeInterval ti = [[NSUserDefaults standardUserDefaults] doubleForKey:@"OUIDocumentAutosaveInterval"];
-    if (ti < 1)
-        return 15;
-    return ti;
-}
-
-+ (BOOL)shouldShowAutosaveIndicator;
-{
-    return [[NSUserDefaults standardUserDefaults] boolForKey:@"OUIDocumentShouldShowAutosaveIndicator"];
-}
 
 // existing document
 - initWithExistingDocumentProxy:(OUIDocumentProxy *)proxy error:(NSError **)outError;
@@ -94,6 +90,7 @@ RCS_ID("$Id$");
     [center addObserver:self selector:@selector(_undoManagerDidOpenGroup:) name:NSUndoManagerDidOpenUndoGroupNotification object:_undoManager];
     [center addObserver:self selector:@selector(_undoManagerWillCloseGroup:) name:NSUndoManagerWillCloseUndoGroupNotification object:_undoManager];
     
+    [center addObserver:self selector:@selector(_inspectorDidDismiss:) name:OUIInspectorDidDismissNotification object:nil];
     [center addObserver:self selector:@selector(_inspectorDidEndChangingInspectedObjects:) name:OUIInspectorDidEndChangingInspectedObjectsNotification object:nil];
     
     if (![self loadDocumentContents:outError]) {
@@ -197,20 +194,6 @@ RCS_ID("$Id$");
     [self didUndo];
 }
 
-- (IBAction)redo:(id)sender;
-{
-    if (![self shouldRedo])
-        return;
-    
-    // Make sure any edits get finished and saved in the current undo group
-    [_viewController.view.window endEditing:YES/*force*/];
-    [self finishUndoGroup]; // close any nested group we created
-    
-    [_undoManager redo];
-    
-    [self didRedo];
-}
-
 - (BOOL)hasUnsavedChanges;
 {
     return _saveTimer != nil;
@@ -278,16 +261,7 @@ RCS_ID("$Id$");
     return YES;
 }
 
-- (BOOL)shouldRedo;
-{
-    return YES;
-}
-
 - (void)didUndo;
-{
-}
-
-- (void)didRedo;
 {
 }
 
@@ -313,21 +287,15 @@ RCS_ID("$Id$");
         return NO;
     }
     
-    if (outError)
-        *outError = nil;
-    
     if (![self saveToURL:url isAutosave:isAutosave error:outError]) {
         OUIDocumentProxy *currentProxy = [self proxy];
         NSString *fileType = [[OUIAppController controller] documentTypeForURL:currentProxy.url];
-        NSURL *newProxyURL = [[[OUIAppController controller] documentPicker] renameProxy:currentProxy toName:[currentProxy name] type:fileType];
-        OUIDocumentProxy *newProxy = [[[OUIAppController controller] documentPicker] proxyWithURL:newProxyURL];
+        OUIDocumentProxy *newProxy = [[[OUIAppController controller] documentPicker] renameProxy:currentProxy toName:[currentProxy name] type:fileType];
         OBASSERT(newProxy != nil);
         [self setProxy:newProxy];
         url = [self url];
         
-        // If this fails too, eat this error and return the original one rather than stacking them up.
-        NSError *retryError = nil;
-        if (![self saveToURL:url isAutosave:isAutosave error:&retryError])
+        if (![self saveToURL:url isAutosave:isAutosave error:outError])
             return NO;
     }
     
@@ -348,7 +316,7 @@ RCS_ID("$Id$");
 {
     if (!_saveTimer) {
         DEBUG_UNDO(@"Scheduling autosave timer");
-        _saveTimer = [[NSTimer scheduledTimerWithTimeInterval:[[self class] autosaveTimeInterval] target:self selector:@selector(_autosaveTimerFired:) userInfo:nil repeats:NO] retain];
+        _saveTimer = [[NSTimer scheduledTimerWithTimeInterval:AUTOSAVE_INTERVAL target:self selector:@selector(_autosaveTimerFired:) userInfo:nil repeats:NO] retain];
     }
 }
 
@@ -387,12 +355,14 @@ RCS_ID("$Id$");
 {
     [self _scheduleAutosave];
     
-    if (!_undoIndicator && [[self class] shouldShowAutosaveIndicator])
+#if SHOW_UNDO_INDICATOR
+    if (!_undoIndicator)
         _undoIndicator = [[OUIUndoIndicator alloc] initWithParentView:_viewController.view];
+#endif
     
     [_undoIndicator show];
     
-    [[[OUIAppController controller] undoBarButtonItem] setEnabled:[_undoManager canUndo] || [_undoManager canRedo]];
+    [[[OUIAppController controller] undoBarButtonItem] setEnabled:[_undoManager canUndo]];
 }
 
 - (void)_undoManagerDidUndoOrRedo:(NSNotification *)note;
@@ -420,6 +390,13 @@ RCS_ID("$Id$");
     
     // Start a timer if one isn't going already
     [self _startAutosaveAndUpdateUndoButton];
+}
+
+- (void)_inspectorDidDismiss:(NSNotification *)note;
+{
+    [self finishUndoGroup];
+    
+    [[self viewToMakeFirstResponderWhenInspectorCloses] becomeFirstResponder];
 }
 
 - (void)_inspectorDidEndChangingInspectedObjects:(NSNotification *)note;

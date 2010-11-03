@@ -14,20 +14,19 @@
 @class OUIDocumentProxy, OUIDocumentPickerView;
 @protocol OUIDocumentPickerDelegate;
 
-@interface OUIDocumentPicker : UIViewController <UIGestureRecognizerDelegate, OUIDocumentPickerViewDelegate, UIDocumentInteractionControllerDelegate, UITextFieldDelegate>
+@interface OUIDocumentPicker : UIViewController <UIGestureRecognizerDelegate, OUIDocumentPickerViewDelegate, UIDocumentInteractionControllerDelegate>
 {
 @private
     id <OUIDocumentPickerDelegate> _nonretained_delegate;
     
     OUIDocumentPickerView *_previewScrollView;
-    UIButton *_titleLabel;
+    UILabel *_titleLabel;
     UILabel *_dateLabel;
     UIView *_buttonGroupView;
     UIButton *_favoriteButton;
     UIButton *_exportButton;
     UIButton *_newDocumentButton;
     UIButton *_deleteButton;
-    UITextField *_titleEditingField;
     
     NSString *_directory;
     NSSet *_proxies;
@@ -37,13 +36,8 @@
     NSMutableArray *_actionSheetActions;
     
     OUIDocumentProxy *_selectedProxyBeforeOrientationChange;
-    NSURL *_editingProxyURL;
     
     UIActionSheet *_nonretainedActionSheet;
-    BOOL _editingTitle;
-    BOOL _keyboardIsShowing;
-    BOOL _isRevealingNewDocument;
-    BOOL _isInnerController;
 }
 
 + (NSString *)userDocumentsDirectory;
@@ -57,7 +51,7 @@
 @property(assign,nonatomic) IBOutlet id <OUIDocumentPickerDelegate> delegate;
 
 @property(retain) IBOutlet OUIDocumentPickerView *previewScrollView;
-@property(retain) IBOutlet UIButton *titleLabel;
+@property(retain) IBOutlet UILabel *titleLabel;
 @property(retain) IBOutlet UILabel *dateLabel;
 @property(retain) IBOutlet UIView *buttonGroupView;
 @property(retain) IBOutlet UIButton *favoriteButton;
@@ -68,8 +62,6 @@
 @property(copy,nonatomic) NSString *directory;
 @property(retain) id proxyTappedTarget;
 @property(assign) SEL proxyTappedAction;
-
-@property(assign) BOOL editingTitle;
 
 - (void)rescanDocuments;
 - (void)rescanDocumentsScrollingToURL:(NSURL *)targetURL;
@@ -83,7 +75,7 @@
 - (OUIDocumentProxy *)proxyNamed:(NSString *)documentName;
 - (BOOL)canEditProxy:(OUIDocumentProxy *)proxy;
 - (BOOL)deleteDocumentWithoutPrompt:(OUIDocumentProxy *)proxy error:(NSError **)outError;
-- (NSURL *)renameProxy:(OUIDocumentProxy *)proxy toName:(NSString *)name type:(NSString *)documentUTI;
+- (OUIDocumentProxy *)renameProxy:(OUIDocumentProxy *)proxy toName:(NSString *)name type:(NSString *)documentUTI;
 
 - (NSURL *)urlForNewDocumentOfType:(NSString *)documentUTI;
 - (NSURL *)urlForNewDocumentWithName:(NSString *)name ofType:(NSString *)documentUTI;
@@ -97,5 +89,5 @@
 - (IBAction)delete:(id)sender;
 - (IBAction)export:(id)sender;
 - (IBAction)emailDocument:(id)sender;
-- (IBAction)editTitle:(id)sender;
+
 @end
