@@ -801,9 +801,11 @@ static CGRect _textRectForViewRect(OUIEditableFrame *self, CGPoint lastLineOrigi
 @synthesize selectionColor = _insertionPointSelectionColor;
 - (void)setSelectionColor:(UIColor *)color;
 {
-    if (OFISEQUAL(_insertionPointSelectionColor, color))
-        return;
-    
+    //if (OFISEQUAL(_insertionPointSelectionColor, color))
+    //    return;
+    if ([_insertionPointSelectionColor isEqual:color]) {
+      return;
+    }
     [_insertionPointSelectionColor release];
     _insertionPointSelectionColor = [color retain];
     
@@ -1288,7 +1290,7 @@ static void notifyAfterMutate(OUIEditableFrame *self, SEL _cmd)
     // We lazily initialize some attributes when we move to a window for the first time.
     
     if (!_insertionPointSelectionColor)
-        self.selectionColor = [UIColor colorWithHue:214.0/360.0 saturation:0.73 brightness:0.95 alpha:1.0];
+        self.selectionColor = [UIColor colorWithHue:0.594 saturation:0.73 brightness:0.95 alpha:1.0];
     
     if (!focusRecognizer) {
         UITapGestureRecognizer *tap1 = [[UITapGestureRecognizer alloc] initWithTarget:self action:@selector(_idleTap)];
@@ -3062,6 +3064,11 @@ static BOOL includeRectsInBound(CGPoint p, CGFloat width, CGFloat trailingWS, CG
     
     [self setNeedsDisplayInRect:CGRectIntegral([self convertRectToRenderingSpace:dirtyRect])];
     // (note that -convertRectToRenderingSpace: does the opposite of what its name suggests)
+}
+
+- (void)setNeedsDisplay
+{
+  [[self backingView] setNeedsDisplay];
 }
 
 - (void)setNeedsDisplayInRect:(CGRect)rect
