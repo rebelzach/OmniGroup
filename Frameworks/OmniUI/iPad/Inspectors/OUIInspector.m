@@ -21,7 +21,7 @@ RCS_ID("$Id$");
 - (void)_makeInterface;
 - (void)_startObserving;
 - (void)_stopObserving;
-- (void)_keyboardDidHide:(NSNotification *)note;
+- (void)_keyboardDidDismiss:(NSNotification *)note;
 - (void)_configurePopoverSize;
 @end
 
@@ -260,7 +260,7 @@ NSString * const OUIInspectorDidEndChangingInspectedObjectsNotification = @"OUII
 {
     if (!_isObservingNotifications) {
         _isObservingNotifications = YES;
-        [[NSNotificationCenter defaultCenter] addObserver:self selector:@selector(_keyboardDidHide:) name:UIKeyboardDidHideNotification object:nil];
+        [[NSNotificationCenter defaultCenter] addObserver:self selector:@selector(_keyboardDidDismiss:) name:UIKeyboardDidHideNotification object:nil];
     }
 }
 
@@ -273,7 +273,7 @@ NSString * const OUIInspectorDidEndChangingInspectedObjectsNotification = @"OUII
     }
 }
 
-- (void)_keyboardDidHide:(NSNotification *)note;
+- (void)_keyboardDidDismiss:(NSNotification *)note;
 {
     // If we got squished, try to grow back to the right size.
     [self _configurePopoverSize];
