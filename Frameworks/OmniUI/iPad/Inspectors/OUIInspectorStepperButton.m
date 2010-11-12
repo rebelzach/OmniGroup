@@ -100,11 +100,11 @@ static id _commonInit(OUIInspectorStepperButton *self)
     [self _rebuildImage];
 }
 
-- (UIFont *)titleFont;
+- (UIFont *)textFont;
 {
     return _label.font;
 }
-- (void)setTitleFont:(UIFont *)font;
+- (void)setTextFont:(UIFont *)font;
 {
     if (!_label)
         [self _makeLabel];
@@ -113,11 +113,11 @@ static id _commonInit(OUIInspectorStepperButton *self)
     [self _rebuildImage];
 }
 
-- (UIColor *)titleColor;
+- (UIColor *)textColor;
 {
     return _label.textColor;
 }
-- (void)setTitleColor:(UIColor *)color;
+- (void)setTextColor:(UIColor *)color;
 {
     if (!_label)
         [self _makeLabel];

@@ -273,13 +273,13 @@ static void _setFontSize(OUIFontInspectorSlice *self, CGFloat fontSize, BOOL rel
     [_fontFaceTextWell setNavigationTarget:self action:@selector(_showFontFaces:)];
     
     _fontSizeDecreaseStepperButton.title = @"A";
-    _fontSizeDecreaseStepperButton.titleFont = [UIFont boldSystemFontOfSize:14];
-    _fontSizeDecreaseStepperButton.titleColor = [UIColor whiteColor];
+    _fontSizeDecreaseStepperButton.textFont = [UIFont boldSystemFontOfSize:14];
+    _fontSizeDecreaseStepperButton.textColor = [UIColor whiteColor];
     _fontSizeDecreaseStepperButton.flipped = YES;
 
     _fontSizeIncreaseStepperButton.title = @"A";
-    _fontSizeIncreaseStepperButton.titleFont = [UIFont boldSystemFontOfSize:32];
-    _fontSizeIncreaseStepperButton.titleColor = [UIColor whiteColor];
+    _fontSizeIncreaseStepperButton.textFont = [UIFont boldSystemFontOfSize:32];
+    _fontSizeIncreaseStepperButton.textColor = [UIColor whiteColor];
 
     CGFloat fontSize = [OUIInspectorTextWell fontSize];
     _fontSizeTextWell.font = [UIFont boldSystemFontOfSize:fontSize];
