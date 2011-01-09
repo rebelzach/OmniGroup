@@ -1118,9 +1118,6 @@ static NSMutableDictionary *KeywordActions;
 @end
 
 @implementation OUIRTFReaderAppendStringAction
-{
-    NSString *_string;
-}
 
 + (OUIRTFReaderAction *)appendStringActionWithString:(NSString *)string;
 {
