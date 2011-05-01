@@ -17,7 +17,7 @@
 
 #import "OUIColorInspectorSlice.h"
 #import "OUIFontInspectorSlice.h"
-#import "OUIParagraphStyleInspectorSlice.h"
+//#import "OUIParagraphStyleInspectorSlice.h"
 
 #import <OmniUI/OUITextLayout.h>
 #import <OmniQuartz/OQColor.h>
@@ -122,7 +122,8 @@ static id do_init(OUIEditableFrame *self)
 
     /* Need to have *some* fallback font. This more or less matches what UITextView does. */
     if (!self->defaultFont)
-        self->defaultFont = CFRetain(OUIGlobalDefaultFont());
+      self->defaultFont = OUIGlobalDefaultFont();
+        //self->defaultFont = CFRetain(OUIGlobalDefaultFont());
     
     self->generation = 1;
     self->markedRange.location = 0;
@@ -135,7 +136,7 @@ static id do_init(OUIEditableFrame *self)
     self->selectionDirtyRect = CGRectNull;
     self->markedTextDirtyRect = CGRectNull;
     
-    self.autocapitalizationType = UITextAutocapitalizationTypeNone;
+    self.autocapitalizationType = UITextAutocapitalizationTypeSentences;
     self->tapSelectionGranularity = UITextGranularityWord;
 
     // You can turn autocorrection on, but it's currently pretty broken: see RADAR 7881864 (dup of 7696512), 7914098 (dup of 7673939).
@@ -3234,7 +3235,7 @@ static BOOL includeRectsInBound(CGPoint p, CGFloat width, CGFloat trailingWS, CG
     NSMutableArray *slices = [NSMutableArray array];
     [slices addObject:[[[OUIColorInspectorSlice alloc] init] autorelease]];
     [slices addObject:[[[OUIFontInspectorSlice alloc] init] autorelease]];
-    [slices addObject:[[[OUIParagraphStyleInspectorSlice alloc] init] autorelease]];
+    //[slices addObject:[[[OUIParagraphStyleInspectorSlice alloc] init] autorelease]];
 
     return slices;
 }

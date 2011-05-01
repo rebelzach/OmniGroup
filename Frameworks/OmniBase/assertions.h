@@ -13,6 +13,8 @@
 #define OMNI_ASSERTIONS_ON
 #endif
 
+
+//#define OMNI_FORCE_ASSERTIONS_OFF
 // This allows you to turn off assertions when debugging
 #if defined(OMNI_FORCE_ASSERTIONS_OFF)
 #undef OMNI_ASSERTIONS_ON

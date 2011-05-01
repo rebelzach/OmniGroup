@@ -39,9 +39,7 @@
 		346C4B371193273600BE8C49 /* OUIInspectorOptionWheelSelectionIndicator.h in Headers */ = {isa = PBXBuildFile; fileRef = 346C4A9D1193273600BE8C49 /* OUIInspectorOptionWheelSelectionIndicator.h */; settings = {ATTRIBUTES = (Public, ); }; };
 		346C4B381193273600BE8C49 /* OUIInspectorOptionWheelSelectionIndicator.m in Sources */ = {isa = PBXBuildFile; fileRef = 346C4A9E1193273600BE8C49 /* OUIInspectorOptionWheelSelectionIndicator.m */; };
 		346C4B391193273600BE8C49 /* OUIInspectorSegmentedControl.h in Headers */ = {isa = PBXBuildFile; fileRef = 346C4A9F1193273600BE8C49 /* OUIInspectorSegmentedControl.h */; settings = {ATTRIBUTES = (Public, ); }; };
-		346C4B3A1193273600BE8C49 /* OUIInspectorSegmentedControl.m in Sources */ = {isa = PBXBuildFile; fileRef = 346C4AA01193273600BE8C49 /* OUIInspectorSegmentedControl.m */; };
 		346C4B3B1193273600BE8C49 /* OUIInspectorSegmentedControlButton.h in Headers */ = {isa = PBXBuildFile; fileRef = 346C4AA11193273600BE8C49 /* OUIInspectorSegmentedControlButton.h */; settings = {ATTRIBUTES = (Public, ); }; };
-		346C4B3C1193273600BE8C49 /* OUIInspectorSegmentedControlButton.m in Sources */ = {isa = PBXBuildFile; fileRef = 346C4AA21193273600BE8C49 /* OUIInspectorSegmentedControlButton.m */; };
 		346C4B3D1193273600BE8C49 /* OUIInspectorSelectionValue.h in Headers */ = {isa = PBXBuildFile; fileRef = 346C4AA31193273600BE8C49 /* OUIInspectorSelectionValue.h */; settings = {ATTRIBUTES = (Public, ); }; };
 		346C4B3E1193273600BE8C49 /* OUIInspectorSelectionValue.m in Sources */ = {isa = PBXBuildFile; fileRef = 346C4AA41193273600BE8C49 /* OUIInspectorSelectionValue.m */; };
 		346C4B3F1193273600BE8C49 /* OUIInspectorSlice.h in Headers */ = {isa = PBXBuildFile; fileRef = 346C4AA51193273600BE8C49 /* OUIInspectorSlice.h */; settings = {ATTRIBUTES = (Public, ); }; };
@@ -61,7 +59,6 @@
 		346C4B4D1193273600BE8C49 /* OUIPaletteTheme.h in Headers */ = {isa = PBXBuildFile; fileRef = 346C4AB61193273600BE8C49 /* OUIPaletteTheme.h */; settings = {ATTRIBUTES = (Public, ); }; };
 		346C4B4E1193273600BE8C49 /* OUIPaletteTheme.m in Sources */ = {isa = PBXBuildFile; fileRef = 346C4AB71193273600BE8C49 /* OUIPaletteTheme.m */; };
 		346C4B4F1193273600BE8C49 /* OUIParagraphStyleInspectorSlice.h in Headers */ = {isa = PBXBuildFile; fileRef = 346C4AB81193273600BE8C49 /* OUIParagraphStyleInspectorSlice.h */; };
-		346C4B501193273600BE8C49 /* OUIParagraphStyleInspectorSlice.m in Sources */ = {isa = PBXBuildFile; fileRef = 346C4AB91193273600BE8C49 /* OUIParagraphStyleInspectorSlice.m */; };
 		346C4B511193273600BE8C49 /* OUIRGBColorPicker.h in Headers */ = {isa = PBXBuildFile; fileRef = 346C4ABA1193273600BE8C49 /* OUIRGBColorPicker.h */; };
 		346C4B521193273600BE8C49 /* OUIRGBColorPicker.m in Sources */ = {isa = PBXBuildFile; fileRef = 346C4ABB1193273600BE8C49 /* OUIRGBColorPicker.m */; };
 		346C4B531193273600BE8C49 /* OUEFTextPosition.h in Headers */ = {isa = PBXBuildFile; fileRef = 346C4AC41193273600BE8C49 /* OUEFTextPosition.h */; settings = {ATTRIBUTES = (Public, ); }; };
@@ -210,6 +207,8 @@
 		34D9ADBE1194A1A4001E3A18 /* OUIRTFReader.m in Sources */ = {isa = PBXBuildFile; fileRef = 34D9ADBA1194A1A4001E3A18 /* OUIRTFReader.m */; };
 		34D9ADBF1194A1A4001E3A18 /* OUIRTFWriter.h in Headers */ = {isa = PBXBuildFile; fileRef = 34D9ADBB1194A1A4001E3A18 /* OUIRTFWriter.h */; settings = {ATTRIBUTES = (Public, ); }; };
 		34D9ADC01194A1A4001E3A18 /* OUIRTFWriter.m in Sources */ = {isa = PBXBuildFile; fileRef = 34D9ADBC1194A1A4001E3A18 /* OUIRTFWriter.m */; };
+		921A075F12CA466A0025DDEF /* MobileCoreServices.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 921A075E12CA466A0025DDEF /* MobileCoreServices.framework */; };
+		921A076212CA46700025DDEF /* MessageUI.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 921A076112CA46700025DDEF /* MessageUI.framework */; };
 		AA747D9F0F9514B9006C5449 /* OmniUI_Prefix.h in Headers */ = {isa = PBXBuildFile; fileRef = AA747D9E0F9514B9006C5449 /* OmniUI_Prefix.h */; };
 		AACBBE4A0F95108600F1A2B1 /* Foundation.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = AACBBE490F95108600F1A2B1 /* Foundation.framework */; };
 /* End PBXBuildFile section */
@@ -524,6 +523,8 @@
 		34D9ADBA1194A1A4001E3A18 /* OUIRTFReader.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = OUIRTFReader.m; sourceTree = "<group>"; };
 		34D9ADBB1194A1A4001E3A18 /* OUIRTFWriter.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = OUIRTFWriter.h; sourceTree = "<group>"; };
 		34D9ADBC1194A1A4001E3A18 /* OUIRTFWriter.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = OUIRTFWriter.m; sourceTree = "<group>"; };
+		921A075E12CA466A0025DDEF /* MobileCoreServices.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = MobileCoreServices.framework; path = System/Library/Frameworks/MobileCoreServices.framework; sourceTree = SDKROOT; };
+		921A076112CA46700025DDEF /* MessageUI.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = MessageUI.framework; path = System/Library/Frameworks/MessageUI.framework; sourceTree = SDKROOT; };
 		AA747D9E0F9514B9006C5449 /* OmniUI_Prefix.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = OmniUI_Prefix.h; sourceTree = "<group>"; };
 		AACBBE490F95108600F1A2B1 /* Foundation.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = Foundation.framework; path = System/Library/Frameworks/Foundation.framework; sourceTree = SDKROOT; };
 		D2AAC07E0554694100DB518D /* libOmniUI.a */ = {isa = PBXFileReference; explicitFileType = archive.ar; includeInIndex = 0; path = libOmniUI.a; sourceTree = BUILT_PRODUCTS_DIR; };
@@ -535,6 +536,8 @@
 			buildActionMask = 2147483647;
 			files = (
 				AACBBE4A0F95108600F1A2B1 /* Foundation.framework in Frameworks */,
+				921A075F12CA466A0025DDEF /* MobileCoreServices.framework in Frameworks */,
+				921A076212CA46700025DDEF /* MessageUI.framework in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -556,6 +559,8 @@
 				08FB77AEFE84172EC02AAC07 /* Source */,
 				0867D69AFE84028FC02AAC07 /* Frameworks */,
 				034768DFFF38A50411DB9C8B /* Products */,
+				921A075E12CA466A0025DDEF /* MobileCoreServices.framework */,
+				921A076112CA46700025DDEF /* MessageUI.framework */,
 			);
 			name = OmniUITouch;
 			sourceTree = "<group>";
@@ -1072,8 +1077,6 @@
 				346C4B341193273600BE8C49 /* OUIInspectorOptionWheel.m in Sources */,
 				346C4B361193273600BE8C49 /* OUIInspectorOptionWheelItem.m in Sources */,
 				346C4B381193273600BE8C49 /* OUIInspectorOptionWheelSelectionIndicator.m in Sources */,
-				346C4B3A1193273600BE8C49 /* OUIInspectorSegmentedControl.m in Sources */,
-				346C4B3C1193273600BE8C49 /* OUIInspectorSegmentedControlButton.m in Sources */,
 				346C4B3E1193273600BE8C49 /* OUIInspectorSelectionValue.m in Sources */,
 				346C4B401193273600BE8C49 /* OUIInspectorSlice.m in Sources */,
 				346C4B421193273600BE8C49 /* OUIInspectorStack.m in Sources */,
@@ -1083,7 +1086,6 @@
 				346C4B4A1193273600BE8C49 /* OUIInspectorWell.m in Sources */,
 				346C4B4C1193273600BE8C49 /* OUIPaletteColorPicker.m in Sources */,
 				346C4B4E1193273600BE8C49 /* OUIPaletteTheme.m in Sources */,
-				346C4B501193273600BE8C49 /* OUIParagraphStyleInspectorSlice.m in Sources */,
 				346C4B521193273600BE8C49 /* OUIRGBColorPicker.m in Sources */,
 				346C4B541193273600BE8C49 /* OUEFTextPosition.m in Sources */,
 				346C4B561193273600BE8C49 /* OUEFTextRange.m in Sources */,
@@ -1135,7 +1137,9 @@
 			isa = XCBuildConfiguration;
 			baseConfigurationReference = 346C4A11119326AD00BE8C49 /* Touch-Library-Debug.xcconfig */;
 			buildSettings = {
+				GCC_DYNAMIC_NO_PIC = NO;
 				PRODUCT_NAME = OmniUI;
+				SDKROOT = iphoneos;
 			};
 			name = Debug;
 		};
@@ -1144,6 +1148,7 @@
 			baseConfigurationReference = 346C4A12119326AD00BE8C49 /* Touch-Library-Release.xcconfig */;
 			buildSettings = {
 				PRODUCT_NAME = OmniUI;
+				SDKROOT = iphoneos;
 				SKIP_INSTALL = YES;
 			};
 			name = Release;
@@ -1152,6 +1157,7 @@
 			isa = XCBuildConfiguration;
 			baseConfigurationReference = 346C49FF119326AD00BE8C49 /* Omni-Global-Debug.xcconfig */;
 			buildSettings = {
+				SDKROOT = iphoneos4.3;
 			};
 			name = Debug;
 		};
@@ -1159,6 +1165,7 @@
 			isa = XCBuildConfiguration;
 			baseConfigurationReference = 346C4A00119326AD00BE8C49 /* Omni-Global-Release.xcconfig */;
 			buildSettings = {
+				SDKROOT = iphoneos4.3;
 			};
 			name = Release;
 		};

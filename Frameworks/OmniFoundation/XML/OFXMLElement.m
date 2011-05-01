@@ -58,6 +58,8 @@ RCS_ID("$Id$");
     return [self deepCopyWithName:_name];
 }
 
+#ifndef __clang_analyzer__
+
 - (OFXMLElement *)deepCopyWithName:(NSString *)name;
 {
     OFXMLElement *newElement = [[OFXMLElement alloc] initWithName:name];
@@ -82,6 +84,8 @@ RCS_ID("$Id$");
 
     return newElement;
 }
+
+#endif
 
 - (NSString *)name;
 {
