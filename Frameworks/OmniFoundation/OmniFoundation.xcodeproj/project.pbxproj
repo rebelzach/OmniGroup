@@ -244,7 +244,6 @@
 		3482890B0A93A29F0064561B /* CFArrayExtensionsTests.m in Sources */ = {isa = PBXBuildFile; fileRef = 3482890A0A93A29F0064561B /* CFArrayExtensionsTests.m */; };
 		34850C840A71491100675995 /* OFBinding.h in Headers */ = {isa = PBXBuildFile; fileRef = 34850C820A71491100675995 /* OFBinding.h */; settings = {ATTRIBUTES = (Public, ); }; };
 		34850C850A71491100675995 /* OFBinding.m in Sources */ = {isa = PBXBuildFile; fileRef = 34850C830A71491100675995 /* OFBinding.m */; };
-		34920C7D0D58D2A0001CBD3D /* DateProcessing.strings in Resources */ = {isa = PBXBuildFile; fileRef = 34920C7B0D58D2A0001CBD3D /* DateProcessing.strings */; };
 		349950AA0F72FF95007C0BC9 /* OFXMLParserTarget.h in Headers */ = {isa = PBXBuildFile; fileRef = 349950A80F72FF8C007C0BC9 /* OFXMLParserTarget.h */; settings = {ATTRIBUTES = (Public, ); }; };
 		349CCB0E118F3BCC0069017B /* OFEnumNameTable-OFXMLArchiving.h in Headers */ = {isa = PBXBuildFile; fileRef = 349CCB0C118F3BCC0069017B /* OFEnumNameTable-OFXMLArchiving.h */; settings = {ATTRIBUTES = (Public, ); }; };
 		349CCB0F118F3BCC0069017B /* OFEnumNameTable-OFXMLArchiving.m in Sources */ = {isa = PBXBuildFile; fileRef = 349CCB0D118F3BCC0069017B /* OFEnumNameTable-OFXMLArchiving.m */; };
@@ -415,7 +414,6 @@
 		4A4E06A408AA72B10098FF0F /* OFXMLIdentifierRegistryObject.h in Headers */ = {isa = PBXBuildFile; fileRef = 34F1CADB066244350097A113 /* OFXMLIdentifierRegistryObject.h */; settings = {ATTRIBUTES = (Public, ); }; };
 		4A4E06A508AA72B10098FF0F /* OFXMLString.h in Headers */ = {isa = PBXBuildFile; fileRef = 344F2EA0050ADFBF0097A113 /* OFXMLString.h */; settings = {ATTRIBUTES = (Public, ); }; };
 		4A4E06A608AA72B10098FF0F /* OFXMLWhitespaceBehavior.h in Headers */ = {isa = PBXBuildFile; fileRef = 344F2E1A050ABDE60097A113 /* OFXMLWhitespaceBehavior.h */; settings = {ATTRIBUTES = (Public, ); }; };
-		4A4E06A808AA72B10098FF0F /* OmniFoundation.strings in Resources */ = {isa = PBXBuildFile; fileRef = 16ACF158FFC40A50C697A14E /* OmniFoundation.strings */; };
 		4A4E06A908AA72B10098FF0F /* Language.strings in Resources */ = {isa = PBXBuildFile; fileRef = 1D3F8FBD03DE7CFA0097A138 /* Language.strings */; };
 		4A4E06AA08AA72B10098FF0F /* EnglishToISO.strings in Resources */ = {isa = PBXBuildFile; fileRef = 1D3F8FBE03DE7CFA0097A138 /* EnglishToISO.strings */; };
 		4A4E06AE08AA72B10098FF0F /* NSObjectSpecifier-OFFixes.m in Sources */ = {isa = PBXBuildFile; fileRef = 34A71C3F0663D4F40097A113 /* NSObjectSpecifier-OFFixes.m */; };
@@ -936,7 +934,6 @@
 		06DB16D5FF5DC915C697A12F /* CFString-OFExtensions.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = "CFString-OFExtensions.h"; sourceTree = "<group>"; };
 		06DB16D6FF5DC915C697A12F /* CFString-OFExtensions.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = "CFString-OFExtensions.m"; sourceTree = "<group>"; };
 		06DB16D9FF5DCC3BC697A12F /* OFLowerCaseTest.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = OFLowerCaseTest.m; sourceTree = "<group>"; };
-		16ACF159FFC40A50C697A14E /* English */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.plist.strings; name = English; path = English.lproj/OmniFoundation.strings; sourceTree = "<group>"; };
 		1872811AFF5DF33FC697A12F /* CFDictionary-OFExtensions.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = "CFDictionary-OFExtensions.h"; sourceTree = "<group>"; };
 		1872811BFF5DF33FC697A12F /* CFDictionary-OFExtensions.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = "CFDictionary-OFExtensions.m"; sourceTree = "<group>"; };
 		1872811EFF5E2339C697A12F /* OFLowercaseStringCache.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = OFLowercaseStringCache.h; sourceTree = "<group>"; };
@@ -1126,7 +1123,6 @@
 		34850C830A71491100675995 /* OFBinding.m */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.c.objc; path = OFBinding.m; sourceTree = "<group>"; };
 		348A50860571490C0097A113 /* OFPoint.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = OFPoint.h; sourceTree = "<group>"; };
 		348A50870571490C0097A113 /* OFPoint.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = OFPoint.m; sourceTree = "<group>"; };
-		34920C7C0D58D2A0001CBD3D /* English */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.plist.strings; name = English; path = English.lproj/DateProcessing.strings; sourceTree = "<group>"; };
 		349950A80F72FF8C007C0BC9 /* OFXMLParserTarget.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = OFXMLParserTarget.h; sourceTree = "<group>"; };
 		349CCB0C118F3BCC0069017B /* OFEnumNameTable-OFXMLArchiving.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = "OFEnumNameTable-OFXMLArchiving.h"; sourceTree = "<group>"; };
 		349CCB0D118F3BCC0069017B /* OFEnumNameTable-OFXMLArchiving.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = "OFEnumNameTable-OFXMLArchiving.m"; sourceTree = "<group>"; };
@@ -2185,8 +2181,6 @@
 				344D0A891190DB4700264D89 /* OFErrors.m */,
 				A28C00260E25A52700832A54 /* OmniFoundation_Prefix.h */,
 				BF0E642806309CBE0097A147 /* Info.plist */,
-				16ACF158FFC40A50C697A14E /* OmniFoundation.strings */,
-				34920C7B0D58D2A0001CBD3D /* DateProcessing.strings */,
 				34A1594705641CC70097A113 /* OmniFoundation.order */,
 				0C8017CEFEE33D48C697A14E /* General Classes */,
 				3D990C76FF365ADAC697A146 /* General Functions */,
@@ -2794,10 +2788,8 @@
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				4A4E06A808AA72B10098FF0F /* OmniFoundation.strings in Resources */,
 				4A4E06A908AA72B10098FF0F /* Language.strings in Resources */,
 				4A4E06AA08AA72B10098FF0F /* EnglishToISO.strings in Resources */,
-				34920C7D0D58D2A0001CBD3D /* DateProcessing.strings in Resources */,
 				345886331035C727006E712F /* SFMT-LICENSE.txt in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
@@ -3273,25 +3265,6 @@
 		};
 /* End PBXTargetDependency section */
 
-/* Begin PBXVariantGroup section */
-		16ACF158FFC40A50C697A14E /* OmniFoundation.strings */ = {
-			isa = PBXVariantGroup;
-			children = (
-				16ACF159FFC40A50C697A14E /* English */,
-			);
-			name = OmniFoundation.strings;
-			sourceTree = "<group>";
-		};
-		34920C7B0D58D2A0001CBD3D /* DateProcessing.strings */ = {
-			isa = PBXVariantGroup;
-			children = (
-				34920C7C0D58D2A0001CBD3D /* English */,
-			);
-			name = DateProcessing.strings;
-			sourceTree = "<group>";
-		};
-/* End PBXVariantGroup section */
-
 /* Begin XCBuildConfiguration section */
 		343B36361034F6900006290A /* Debug */ = {
 			isa = XCBuildConfiguration;
@@ -3321,7 +3294,9 @@
 			isa = XCBuildConfiguration;
 			baseConfigurationReference = 344D08D01190D48A00264D89 /* Touch-Library-Debug.xcconfig */;
 			buildSettings = {
+				GCC_DYNAMIC_NO_PIC = NO;
 				PRODUCT_NAME = OmniFoundation;
+				SDKROOT = iphoneos4.3;
 			};
 			name = Debug;
 		};
@@ -3330,6 +3305,7 @@
 			baseConfigurationReference = 344D08D11190D48A00264D89 /* Touch-Library-Release.xcconfig */;
 			buildSettings = {
 				PRODUCT_NAME = OmniFoundation;
+				SDKROOT = iphoneos4.3;
 			};
 			name = Release;
 		};
@@ -3338,6 +3314,7 @@
 			baseConfigurationReference = 344D08CF1190D48A00264D89 /* Touch-Library-Coverage.xcconfig */;
 			buildSettings = {
 				PRODUCT_NAME = OmniFoundation;
+				SDKROOT = iphoneos4.3;
 			};
 			name = Coverage;
 		};
@@ -3670,6 +3647,8 @@
 					"$(value)",
 					/usr/include/libxml2,
 				);
+				IPHONEOS_DEPLOYMENT_TARGET = 3.2;
+				SDKROOT = iphoneos4.3;
 			};
 			name = Debug;
 		};
@@ -3684,6 +3663,8 @@
 					"$(value)",
 					/usr/include/libxml2,
 				);
+				IPHONEOS_DEPLOYMENT_TARGET = 3.2;
+				SDKROOT = iphoneos4.3;
 			};
 			name = Release;
 		};
@@ -3698,6 +3679,8 @@
 					"$(value)",
 					/usr/include/libxml2,
 				);
+				IPHONEOS_DEPLOYMENT_TARGET = 3.2;
+				SDKROOT = iphoneos4.3;
 			};
 			name = Coverage;
 		};

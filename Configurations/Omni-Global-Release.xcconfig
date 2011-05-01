@@ -6,6 +6,6 @@
 #include "Omni-Global-Common.xcconfig"
 
 // Common settings for Release configurations
-DEPLOYMENT_LOCATION = YES
-DSTROOT = /
-INSTALL_PATH = $(OMNI_INSTALLED_PRODUCTS)
+//DEPLOYMENT_LOCATION = YES
+//DSTROOT = /
+//INSTALL_PATH = $(OMNI_INSTALLED_PRODUCTS)
