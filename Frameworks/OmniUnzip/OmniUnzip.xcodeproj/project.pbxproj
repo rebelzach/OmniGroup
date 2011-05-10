@@ -425,7 +425,11 @@
 			isa = PBXProject;
 			buildConfigurationList = 1DEB91B108733DA50010E9CD /* Build configuration list for PBXProject "OmniUnzip" */;
 			compatibilityVersion = "Xcode 3.2";
+			developmentRegion = English;
 			hasScannedForEncodings = 1;
+			knownRegions = (
+				en,
+			);
 			mainGroup = 0867D691FE84028FC02AAC07 /* OmniUnzip */;
 			productRefGroup = 034768DFFF38A50411DB9C8B /* Products */;
 			projectDirPath = "";
@@ -585,6 +589,7 @@
 			buildSettings = {
 				GCC_PREFIX_HEADER = OmniUnzip_Prefix.pch;
 				PRODUCT_NAME = OmniUnzip;
+				SDKROOT = iphoneos;
 			};
 			name = Debug;
 		};
@@ -594,6 +599,7 @@
 			buildSettings = {
 				GCC_PREFIX_HEADER = OmniUnzip_Prefix.pch;
 				PRODUCT_NAME = OmniUnzip;
+				SDKROOT = iphoneos;
 			};
 			name = Coverage;
 		};
@@ -603,6 +609,7 @@
 			buildSettings = {
 				GCC_PREFIX_HEADER = OmniUnzip_Prefix.pch;
 				PRODUCT_NAME = OmniUnzip;
+				SDKROOT = iphoneos;
 			};
 			name = Release;
 		};

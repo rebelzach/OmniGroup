@@ -1,4 +1,4 @@
-// Copyright 2010 The Omni Group.  All rights reserved.
+// Copyright 2010-2011 The Omni Group.  All rights reserved.
 //
 // This software may only be used and reproduced according to the
 // terms in the file OmniSourceLicense.html, which should be
@@ -11,6 +11,7 @@
 #import <CoreText/CoreText.h>
 #import <OmniUI/OUIInspector.h>
 #import <OmniUI/OUIEditableFrameDelegate.h>
+#import <OmniUI/OUILoupeOverlaySubject.h>
 
 @class NSMutableAttributedString;
 
@@ -19,7 +20,7 @@
 
 @class CALayer, CAShapeLayer;
 
-@interface OUIEditableFrame : OUIScalingView <UIKeyInput, UITextInputTraits, UITextInput, OUIInspectorDelegate>
+@interface OUIEditableFrame : OUIScalingView <UIKeyInput, UITextInputTraits, UITextInput, OUIInspectorDelegate, OUILoupeOverlaySubject>
 {
 @private
     /* The data model: an attributed string, a selection range. */
@@ -39,6 +40,9 @@
     UIColor *_insertionPointSelectionColor;
     UIColor *_rangeSelectionColor;
     NSDictionary *markedTextStyle; // Supplied by UIKit.
+    UIColor *_markedRangeBackgroundColor, *_markedRangeBorderColor;
+    CGFloat _markedRangeBorderThickness;
+    NSDictionary *_linkTextAttributes;
     id <OUIEditableFrameDelegate> delegate;
     CGSize layoutSize;
     UIEdgeInsets textInset;
@@ -59,12 +63,24 @@
     CGRect selectionDirtyRect, markedTextDirtyRect;
     
     struct {
+        // Our current state
         unsigned textNeedsUpdate : 1;
-        unsigned delegateRespondsToLayoutChanged: 1;
-        unsigned delegateRespondsToContentsChanged: 1;
-        unsigned showSelectionThumbs: 1;
         unsigned solidCaret: 1;
         unsigned showingEditMenu: 1;
+        
+        // Cached information about our OUIEditableFrameDelegate
+        unsigned delegateRespondsToLayoutChanged: 1;
+        unsigned delegateRespondsToContentsChanged: 1;
+        unsigned delegateRespondsToCanShowContextMenu: 1;
+        unsigned delegateRespondsToShouldInsertText: 1;
+        
+        // Features which can be enabled or disabled
+        unsigned showSelectionThumbs: 1;  // Effectively disables range selection
+        unsigned showsInspector: 1;        // Whether the inspector is offered
+        
+        // Information about our content
+        unsigned immutableContentHasAttributeTransforms: 1;     // False if our -attributedText isn't a simple subrange of immutableContent
+        unsigned mayHaveBackgroundRanges: 1;                    // True unless we know we don't have any ... .
     } flags;
     
     // Range selection adjustment and display
@@ -106,17 +122,22 @@
 @property (nonatomic, readwrite) CTFontRef defaultCTFont;                      /* Applied to any runs lacking kCTFontAttributeName */
 @property (nonatomic, readwrite) CTParagraphStyleRef defaultCTParagraphStyle;  /* Applied to any runs lacking kCTParagraphStyleAttributeName */
 
+@property (nonatomic, copy) NSDictionary *linkTextAttributes;
+
 @property (nonatomic) BOOL autoCorrectDoubleSpaceToPeriodAtSentenceEnd;
 @property (nonatomic) UITextAutocorrectionType autocorrectionType;  // defaults to UITextAutocorrectionTypeNo
 @property (nonatomic) UITextAutocapitalizationType autocapitalizationType; // defaults to UITextAutocapitalizationTypeNone
 
 @property (nonatomic, readwrite, retain) UIView *inputAccessoryView;
 
-- (UITextRange *)selectedTextRange;
-- (void)setSelectedTextRange:(UITextRange *)newRange;
+@property (nonatomic) UITextGranularity tapSelectionGranularity;
 
 - (void)setupCustomMenuItemsForMenuController:(UIMenuController *)menuController;
 
+- (OUEFTextRange *)rangeOfLineContainingPosition:(OUEFTextPosition *)posn;
+- (UITextRange *)selectionRangeForPoint:(CGPoint)p wordSelection:(BOOL)selectWords;
+
+- (CGRect)boundsOfRange:(UITextRange *)range; // May return CGRectZero
 
 /* These are the interface from the thumbs to our selection machinery */
 - (void)thumbBegan:(OUITextThumb *)thumb;
@@ -124,9 +145,24 @@
 - (void)thumbEnded:(OUITextThumb *)thumb normally:(BOOL)normalEnd;
 
 /* These are the interface from the inspectable spans */
-- (id <NSObject>)attribute:(NSString *)attr inRange:(OUEFTextRange *)r;
-- (void)setValue:(id)value forAttribute:(NSString *)attr inRange:(OUEFTextRange *)r;
+- (NSDictionary *)attributesInRange:(UITextRange *)r;
+- (id <NSObject>)attribute:(NSString *)attr inRange:(UITextRange *)r;
+- (void)setValue:(id)value forAttribute:(NSString *)attr inRange:(UITextRange *)r;
 
+- (BOOL)hasTouchesForEvent:(UIEvent *)event;
+- (BOOL)hasTouchByGestureRecognizer:(UIGestureRecognizer *)recognizer;
+
+// Controls whether the text style inspector is offered in the selection context menu. Not recommended since adjusting the text attributes can change text layout and make the position of inspector look bad.
+@property(nonatomic,assign) BOOL showsInspector OB_DEPRECATED_ATTRIBUTE;
+
+- (NSSet *)inspectableTextSpans;    // returns set of OUEFTextSpans 
+- (void)inspectSelectedTextFromBarButtonItem:(UIBarButtonItem *)barButtonItem;
+- (void)dismissInspectorImmediately;
+
+
+@property (nonatomic, readwrite, retain) UIColor *markedRangeBorderColor;
+@property (nonatomic, readwrite, retain) UIColor *markedRangeBackgroundColor;
+@property (nonatomic, readwrite, assign) CGFloat markedRangeBorderThickness;
 
 @end
 
