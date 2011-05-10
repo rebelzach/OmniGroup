@@ -1,4 +1,4 @@
-// Copyright 2004-2006, 2010 Omni Development, Inc.  All rights reserved.
+// Copyright 2004-2006, 2010-2011 Omni Development, Inc.  All rights reserved.
 //
 // This software may only be used and reproduced according to the
 // terms in the file OmniSourceLicense.html, which should be
@@ -31,11 +31,11 @@ RCS_ID("$Id$");
 
 - (id)initWithFrame:(NSRect)buttonFrame pullsDown:(BOOL)flag;
 {
-    if ([super initWithFrame:buttonFrame pullsDown:flag] == nil)
+    if (!(self = [super initWithFrame:buttonFrame pullsDown:flag]))
         return nil;
 
     gearItem = [[NSMenuItem alloc] initWithTitle:@"" action:NULL keyEquivalent:@""];
-    [gearItem setImage:[isa gearImage]];
+    [gearItem setImage:[[self class] gearImage]];
 
     // First item is always the label
     [[self menu] addItem:gearItem];
@@ -56,7 +56,7 @@ RCS_ID("$Id$");
     [super awakeFromNib];
     
     if ([self image] == nil) {
-        [self setImage:[isa gearImage]];
+        [self setImage:[[self class] gearImage]];
     }
     if ([NSString isEmptyString:[self toolTip]])
         [self setToolTip:OAContextControlToolTip()];

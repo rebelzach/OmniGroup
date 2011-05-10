@@ -1,4 +1,4 @@
-// Copyright 2008-2010 The Omni Group.  All rights reserved.
+// Copyright 2008-2011 The Omni Group.  All rights reserved.
 //
 // This software may only be used and reproduced according to the
 // terms in the file OmniSourceLicense.html, which should be
@@ -19,17 +19,16 @@
 
 RCS_ID("$Id$")
 
-@interface OQContentAnimatingLayer (/*Private*/)
-+ (void)_updateTimerFired:(NSTimer *)timer;
-@end
+/*
+ 
+ NOTE: If you add ivars to your subclass that are referenced in its drawing methods (configuration stuff like non-animated colors/rects), then you must implement -initWithLayer: in your subclass to copy that state. Otherwise, the presentationLayer made when animations start won't be properly configured and will at best draw incorrectly and at worst crash.
+ 
+ */
 
 @implementation OQContentAnimatingLayer
 
 // Ghetto support for -actionFor<Key>
 static CFMutableDictionaryRef ActionNameToSelector = NULL;
-
-static NSTimer *UpdateTimer = nil;
-static NSMutableSet *LayersWithActiveAnimations = nil;
 
 static SEL ActionSelectorForKey(NSString *key)
 {
@@ -68,8 +67,6 @@ static CFHashCode _hashString(const void *value)
         CFDictionaryValueCallBacks valueCallbacks;
         memset(&valueCallbacks, 0, sizeof(valueCallbacks));
         ActionNameToSelector = CFDictionaryCreateMutable(kCFAllocatorDefault, 0, &keyCallbacks, &valueCallbacks);
-        
-        LayersWithActiveAnimations = [[NSMutableSet alloc] init];
     }
 }
 
@@ -97,7 +94,7 @@ static CFHashCode _hashString(const void *value)
 #pragma mark NSObject (NSKeyValueObservingCustomization).
 
 // Might want to rename this instead of using the KVO method; or not.
-+ (NSSet *)keyPathsForValuesAffectingContent;
++ (NSSet *)keyPathsForValuesAffectingContents;
 {
     return [NSSet set];
 }
@@ -108,7 +105,7 @@ static CFHashCode _hashString(const void *value)
 {
     // Called due to -respondsToSelector: in our -actionForKey:, but only if it doesn't have the method already (in which case we assume it does something reasonble).  Install a method that provides an animation for the property. Right now we are doing a forward lookup of key->sel since this shouldn't get called often, though we could invert the dictionary if needed.
 
-    NSSet *contentAffectingKeys = [self keyPathsForValuesAffectingContent];
+    NSSet *contentAffectingKeys = [self keyPathsForValuesAffectingContents];
     OBASSERT(self == [OQContentAnimatingLayer class] || [contentAffectingKeys count] > 0); // Why are you subclassing and not providing any keys?
     
     for (NSString *key in contentAffectingKeys) {
@@ -124,6 +121,13 @@ static CFHashCode _hashString(const void *value)
 }
 
 #pragma mark CALayer subclass
+
++ (BOOL)needsDisplayForKey:(NSString *)key;
+{
+    if ([[self keyPathsForValuesAffectingContents] member:key])
+        return YES;
+    return [super needsDisplayForKey:key];
+}
 
 - (id <CAAction>)actionForKey:(NSString *)event;
 {
@@ -160,19 +164,12 @@ static CFHashCode _hashString(const void *value)
 {
     // Have to do the add here instead of in -addAnimation:forKey: since a copy is started, not the original passed in.
     if ([self isContentAnimation:anim]) {
-        if (!UpdateTimer) {
-            UpdateTimer = [[NSTimer timerWithTimeInterval:1/60.0 target:[OQContentAnimatingLayer class] selector:@selector(_updateTimerFired:) userInfo:nil repeats:YES] retain];
-            [[NSRunLoop currentRunLoop] addTimer:UpdateTimer forMode:NSRunLoopCommonModes]; // Otherwise, if we are dragging to start an animation, the timer won't fire while tracking the mouse.
-        }
-        
         if (!_activeContentAnimations) {
             _activeContentAnimations = [[NSMutableArray alloc] init];
-            OBASSERT([LayersWithActiveAnimations member:self] == nil);
-            [LayersWithActiveAnimations addObject:self];
         }
         OBASSERT([_activeContentAnimations indexOfObjectIdenticalTo:anim] == NSNotFound);
         [_activeContentAnimations addObject:anim];
-        DEBUG_CONTENT_ANIMATION(@"Started content animation %@.%@ %@..%@ to %@, count %d %g", anim, [(CABasicAnimation *)anim keyPath], [(CABasicAnimation *)anim fromValue], [(CABasicAnimation *)anim toValue], self, [_activeContentAnimations count], anim.duration);
+        DEBUG_CONTENT_ANIMATION(@"Started content animation %@.%@ %@..%@ to %@, count %ld %g", anim, [(CABasicAnimation *)anim keyPath], [(CABasicAnimation *)anim fromValue], [(CABasicAnimation *)anim toValue], self, [_activeContentAnimations count], anim.duration);
     }
 }
 
@@ -185,7 +182,7 @@ static CFHashCode _hashString(const void *value)
     }
     
     [_activeContentAnimations removeObjectAtIndex:animIndex];
-    DEBUG_CONTENT_ANIMATION(@"Stopped content animation %p from %@, count %d", anim, self, [_activeContentAnimations count]);
+    DEBUG_CONTENT_ANIMATION(@"Stopped content animation %@.%@ from %@, count %ld", anim, ((CABasicAnimation *)anim).keyPath, self, [_activeContentAnimations count]);
 
     if ([_activeContentAnimations count] == 0) {
         // One last display now that things are in the final state
@@ -194,14 +191,6 @@ static CFHashCode _hashString(const void *value)
         [_activeContentAnimations release];
         _activeContentAnimations = nil;
         [self finishedAnimatingContent];
-
-        OBASSERT([LayersWithActiveAnimations member:self] == self);
-        [LayersWithActiveAnimations removeObject:self];
-        if ([LayersWithActiveAnimations count] == 0) {
-            [UpdateTimer invalidate];
-            [UpdateTimer release];
-            UpdateTimer = nil;
-        }
     }
 }
 
@@ -214,12 +203,14 @@ static CFHashCode _hashString(const void *value)
     [super setValue:value forKey:key];	
     
     if ([[CATransaction valueForKey:kCATransactionDisableActions] boolValue] &&
-        [[[self class] keyPathsForValuesAffectingContent] member:key] != nil)
+        [[[self class] keyPathsForValuesAffectingContents] member:key] != nil)
         [self setNeedsDisplay];
 }
 
 #pragma mark API
 
+// This does not return the right answer between the time that the animation is created and added and the time that -animationDidStart: fires.
+// This can let an frame of animation through where this returns the wrong answer and where it would instead be better to ask for -animationForKey: instead.
 - (BOOL)hasContentAnimations;
 {
     return [_activeContentAnimations count] > 0;
@@ -230,9 +221,9 @@ static CFHashCode _hashString(const void *value)
     if (![anim isKindOfClass:[CAPropertyAnimation class]])
         return NO;
     
-    // Will be fater if subclass +keyPathsForValuesAffectingContent don't autorelease each time we call them.  Better way to do this?
+    // Will be fater if subclass +keyPathsForValuesAffectingContents don't autorelease each time we call them.  Better way to do this?
     CAPropertyAnimation *prop = (CAPropertyAnimation *)anim;
-    return [[[self class] keyPathsForValuesAffectingContent] member:[prop keyPath]] != nil;
+    return [[[self class] keyPathsForValuesAffectingContents] member:[prop keyPath]] != nil;
 }
 
 - (void)finishedAnimatingContent;
@@ -255,20 +246,6 @@ static CFHashCode _hashString(const void *value)
     OBASSERT(basic.fromValue);
     
     return basic;
-}
-
-- (id <CAAction>)actionForContents;
-{
-    // We don't want to cross-fade between content images.
-    return nil;
-}
-
-#pragma mark Private API
-
-+ (void)_updateTimerFired:(NSTimer *)timer;
-{
-    DEBUG_CONTENT_ANIMATION(@"Update layers %@", LayersWithActiveAnimations);
-    [LayersWithActiveAnimations makeObjectsPerformSelector:@selector(setNeedsDisplay)];
 }
 
 @end

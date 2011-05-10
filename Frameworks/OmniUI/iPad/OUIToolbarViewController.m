@@ -7,9 +7,12 @@
 
 #import <OmniUI/OUIToolbarViewController.h>
 
-#import <OmniUI/OUIDocumentPickerBackgroundView.h>
 #import <OmniUI/OUIAppController.h>
 #import <OmniUI/UIView-OUIExtensions.h>
+
+#import "OUIToolbarViewController-Internal.h"
+#import "OUIToolbarViewControllerToolbar.h"
+#import "OUIToolbarViewControllerBackgroundView.h"
 
 RCS_ID("$Id$");
 
@@ -30,16 +33,14 @@ RCS_ID("$Id$");
 {
     [[NSNotificationCenter defaultCenter] removeObserver:self];
     
-    [_toolbar release];
-    [_contentView release];
     [_innerViewController release];
     [super dealloc];
 }
 
 - (UIToolbar *)toolbar;
 {
-    [self view]; // make sure it is created
-    return _toolbar;
+    OUIToolbarViewControllerBackgroundView *view = (OUIToolbarViewControllerBackgroundView *)self.view;
+    return view.toolbar;
 }
 
 @synthesize innerViewController = _innerViewController;
@@ -52,7 +53,10 @@ static void _setInnerViewController(OUIToolbarViewController *self, UIViewContro
         // Animation setup has already done this
         if (!forAnimation)
             [self->_innerViewController willResignInnerToolbarController:self animated:forAnimation];
-
+        else {
+            OBASSERT(self->_animatingAwayFromCurrentInnerViewController);
+        }
+        
         // Might have been unloaded already -- don't provoke a reload.
         if ([self->_innerViewController isViewLoaded])
             [self->_innerViewController.view removeFromSuperview];
@@ -70,16 +74,19 @@ static void _setInnerViewController(OUIToolbarViewController *self, UIViewContro
         if (!forAnimation) {
             [self _prepareViewControllerForContainment:viewController hidden:NO];
             [viewController willBecomeInnerToolbarController:self animated:forAnimation]; // This call requires we are the right size. Could have *another* call for will-prepare, if needed
+        } else {
+            OBASSERT(self->_animatingAwayFromCurrentInnerViewController);
+            self->_animatingAwayFromCurrentInnerViewController = NO; // all done animating
         }
 
-        OUIDocumentPickerBackgroundView *backgroundView = (OUIDocumentPickerBackgroundView *)self.view;
+        OUIToolbarViewControllerBackgroundView *view = (OUIToolbarViewControllerBackgroundView *)self.view;
         
         self->_innerViewController = [viewController retain];
-        OBASSERT(self->_innerViewController.view.superview == self->_contentView); // done by -prepareViewControllerForContainment:
-        [self->_contentView layoutIfNeeded];
+        OBASSERT(self->_innerViewController.view.superview == view.contentView); // done by -prepareViewControllerForContainment:
+        [view.contentView layoutIfNeeded];
         self->_innerViewController.view.hidden = NO;
-        [self->_toolbar setItems:viewController.toolbarItems animated:forAnimation];
-        backgroundView.editing = viewController.isEditingViewController;
+        [view.toolbar setItems:viewController.toolbarItems animated:forAnimation];
+        view.editing = viewController.isEditingViewController;
         [self->_innerViewController didBecomeInnerToolbarController:self];
     }
 }
@@ -93,15 +100,23 @@ static void _setInnerViewController(OUIToolbarViewController *self, UIViewContro
     [[OUIAppController controller] hideActivityIndicator];
 }
 
-- (void)_prepareViewControllerForContainment:(UIViewController *)soonToBeInnerViewController hidden:(BOOL)hidden;
+- (void)adjustSizeToMatch:(UIViewController *)soonToBeInnerViewController;
 {
-    OBPRECONDITION(_contentView);
+    OUIToolbarViewControllerBackgroundView *backgroundView = (OUIToolbarViewControllerBackgroundView *)self.view;
     
     UIView *innerView = soonToBeInnerViewController.view;
-    CGRect contentBounds = _contentView.bounds;
+    CGRect contentBounds = backgroundView.contentView.bounds;
     innerView.frame = contentBounds;
-
+    
     [innerView layoutIfNeeded];
+}
+
+- (void)_prepareViewControllerForContainment:(UIViewController *)soonToBeInnerViewController hidden:(BOOL)hidden;
+{
+    [self adjustSizeToMatch:soonToBeInnerViewController];
+
+    OUIToolbarViewControllerBackgroundView *backgroundView = (OUIToolbarViewControllerBackgroundView *)self.view;
+    UIView *innerView = soonToBeInnerViewController.view;
 
     // Add the view *now*, but make it hidden. This allows the caller to make coordinate system transforms between this view and the current inner view.
     if (hidden)
@@ -111,7 +126,7 @@ static void _setInnerViewController(OUIToolbarViewController *self, UIViewContro
         //OBASSERT(innerView.hidden == NO);
     }
 
-    [_contentView addSubview:innerView];
+    [backgroundView.contentView addSubview:innerView];
 }
 
 - (void)willAnimateToInnerViewController:(UIViewController *)viewController;
@@ -126,6 +141,17 @@ static void _setInnerViewController(OUIToolbarViewController *self, UIViewContro
     
     if (viewController)
         [self _prepareViewControllerForContainment:viewController hidden:YES];
+}
+
+- (void)setToolbarHidden:(BOOL)hidden;
+{
+    UIToolbar *toolbar = self.toolbar;
+
+    if (toolbar.hidden == hidden)
+        return;
+
+    toolbar.hidden = hidden;
+    [self.view setNeedsLayout];
 }
 
 typedef struct {
@@ -148,7 +174,7 @@ typedef struct {
     OBASSERT([toView isDescendantOfView:viewController.view]);
     
     // Disable further clicks. Our background view has a hack to eat events. Also, animate between an editing and non-editing image.
-    OUIDocumentPickerBackgroundView *backgroundView = (OUIDocumentPickerBackgroundView *)self.view;
+    OUIToolbarViewControllerBackgroundView *backgroundView = (OUIToolbarViewControllerBackgroundView *)self.view;
     backgroundView.editing = viewController.isEditingViewController;
     
     // We'll be hiding these views while animating; shouldn't be hidden yet.
@@ -156,6 +182,8 @@ typedef struct {
     OBASSERT(toView.layer.hidden == NO);
     
     // Get the document's view controller properly configured and send the 'will' notifications
+    OBASSERT(_animatingAwayFromCurrentInnerViewController == NO);
+    _animatingAwayFromCurrentInnerViewController = YES;
     [_innerViewController willResignInnerToolbarController:self animated:YES];
     [self _prepareViewControllerForContainment:viewController hidden:YES];
     [viewController willBecomeInnerToolbarController:self animated:YES];
@@ -284,6 +312,8 @@ typedef struct {
     free(ctx);
 }
 
+@synthesize animatingAwayFromCurrentInnerViewController = _animatingAwayFromCurrentInnerViewController;
+
 @synthesize resizesToAvoidKeyboard = _resizesToAvoidKeyboard;
 - (void)setResizesToAvoidKeyboard:(BOOL)resizesToAvoidKeyboard;
 {
@@ -305,47 +335,57 @@ NSString * const OUIToolbarViewControllerResizedForKeyboard = @"OUIToolbarViewCo
 
 - (void)keyboardWillShow:(NSNotification *)note;
 {
-    OBPRECONDITION(_contentView);
+    OBPRECONDITION([self isViewLoaded]);
     
     // Documentation, mail or other modal view atop us -- the keyboard isn't for us. This has an implicit assumption that the keyboard will go away before the modal view controller.
     if (self.modalViewController)
         return;
     
     // Resize our content view so that it isn't obscured by the keyboard. Our superview is the background view, who has the window as its superview. Window coordinates are in device space (unrotated), but our superview will have orientation correct coordinates. The keyboard will have device coordinates (unrotated).
-#ifdef OMNI_ASSERTIONS_ON
-    OUIDocumentPickerBackgroundView *backgroundView = (OUIDocumentPickerBackgroundView *)self.view;
-#endif
-    OBASSERT(_contentView.superview == backgroundView);
+    OUIToolbarViewControllerBackgroundView *backgroundView = (OUIToolbarViewControllerBackgroundView *)self.view;
     OBASSERT(backgroundView.superview == backgroundView.window);
     
     //NSLog(@"will show %@", note);
     NSValue *keyboardEndFrameValue = [[note userInfo] objectForKey:UIKeyboardFrameEndUserInfoKey];
     OBASSERT(keyboardEndFrameValue);
-    CGRect keyboardRectInBounds = [_contentView convertRect:[keyboardEndFrameValue CGRectValue] fromView:nil];
+    CGRect keyboardRectInBounds = [backgroundView convertRect:[keyboardEndFrameValue CGRectValue] fromView:nil];
     //NSLog(@"keyboardRectInBounds = %@", NSStringFromRect(keyboardRectInBounds));
     
     // We should directly in the window and taking up the whole application-available frame.
-    CGRect appSpaceInBounds = [_contentView convertRect:_contentView.window.screen.applicationFrame fromView:nil];
+    CGRect appSpaceInBounds = [backgroundView convertRect:backgroundView.window.screen.applicationFrame fromView:nil];
     //NSLog(@"appSpaceInBounds %@", NSStringFromRect(appSpaceInBounds));
 
     // We get notified of the keyboard appearing, but with it fully off screen if the hardware keyboard is enabled. If we don't need to adjust anything, bail.
     if (!CGRectIntersectsRect(appSpaceInBounds, keyboardRectInBounds))
         return;
-        
+    
+    // Since we can get multiple 'will show' notifications w/o a 'will hide' (when changing international keyboards changes the keyboard height), we can't assume that the contentView's height is the full unmodified height.
+    
     // The keyboard will come up out of the bottom. Trim our height so that our max-y avoids it.
-    CGRect contentBounds = _contentView.bounds;
-    CGRect contentBoundsAvoidingKeyboard = contentBounds;
-    contentBoundsAvoidingKeyboard.size.height = CGRectGetMinY(keyboardRectInBounds) - CGRectGetMinY(contentBounds);
-    //NSLog(@"contentBoundsAvoidingKeyboard %@", NSStringFromRect(contentBoundsAvoidingKeyboard));
-    OBASSERT(!CGRectIntersectsRect(keyboardRectInBounds, contentBoundsAvoidingKeyboard));
+    CGFloat avoidedBottomHeight = CGRectGetMaxY(backgroundView.bounds) - CGRectGetMinY(keyboardRectInBounds);
+    
+#ifdef OMNI_ASSERTIONS_ON
+//    {
+//        CGRect contentBoundsAvoidingKeyboard = contentBounds;
+//        contentBoundsAvoidingKeyboard.size.height = availableContentHeight;
+//        //NSLog(@"contentBoundsAvoidingKeyboard %@", NSStringFromRect(contentBoundsAvoidingKeyboard));
+//        OBASSERT(!CGRectIntersectsRect(keyboardRectInBounds, contentBoundsAvoidingKeyboard));
+//    }
+#endif
     
     [UIView beginAnimations:@"avoid keyboard" context:NULL];
     {
+        // Match the keyboard animation time and curve. Also, starting from the current position is very important. If we don't and we are jumping between two editable controls, our view size may bounce.
         [UIView setAnimationDuration:[[[note userInfo] objectForKey:UIKeyboardAnimationDurationUserInfoKey] floatValue]];
         [UIView setAnimationCurve:[[[note userInfo] objectForKey:UIKeyboardAnimationCurveUserInfoKey] intValue]];
+        [UIView setAnimationBeginsFromCurrentState:YES];
         
-        _contentView.frame = [_contentView convertRect:contentBoundsAvoidingKeyboard toView:_contentView.superview];
+        backgroundView.avoidedBottomHeight = avoidedBottomHeight;
+        [backgroundView layoutIfNeeded]; // since our notification says we have resized
+
         [[NSNotificationCenter defaultCenter] postNotificationName:OUIToolbarViewControllerResizedForKeyboard object:self];
+
+        [backgroundView layoutIfNeeded]; // in case the notification moves anything else around
     }
     [UIView commitAnimations];
 
@@ -357,20 +397,18 @@ NSString * const OUIToolbarViewControllerResizedForKeyboard = @"OUIToolbarViewCo
     if (self.modalViewController)
         return;
 
-    // Adjust our content view to cover everything but the toolbar.
-    OUIDocumentPickerBackgroundView *backgroundView = (OUIDocumentPickerBackgroundView *)self.view;
-    CGRect backgroundBounds = backgroundView.bounds;
-    CGRect toolbarFrame = _toolbar.frame;
-
-    CGRect contentFrame, dummy;
-    CGRectDivide(backgroundBounds, &dummy, &contentFrame, CGRectGetHeight(toolbarFrame), CGRectMinYEdge);
+    // Remove the restriction on the content height
+    OUIToolbarViewControllerBackgroundView *backgroundView = (OUIToolbarViewControllerBackgroundView *)self.view;
     
     [UIView beginAnimations:@"done avoiding keyboard" context:NULL];
     {
+        // Match the keyboard animation time and curve. Also, starting from the current position is very important. If we don't and we are jumping between two editable controls, our view size may bounce.
         [UIView setAnimationDuration:[[[note userInfo] objectForKey:UIKeyboardAnimationDurationUserInfoKey] floatValue]];
         [UIView setAnimationCurve:[[[note userInfo] objectForKey:UIKeyboardAnimationCurveUserInfoKey] intValue]];
+        [UIView setAnimationBeginsFromCurrentState:YES];
 
-        _contentView.frame = contentFrame;
+        backgroundView.avoidedBottomHeight = 0;
+        [backgroundView layoutIfNeeded];
     }
     [UIView commitAnimations];
 
@@ -394,48 +432,18 @@ NSString * const OUIToolbarViewControllerResizedForKeyboard = @"OUIToolbarViewCo
      
      */
     
-    static const CGFloat kToolbarHeight = 44;
-    static const CGFloat kStartingSize = 200; // whatever -- just something so we can lay stuff out and let autosizing take over.
+    static const CGFloat kStartingSize = 200; // whatever -- just something so we can lay stuff out to start
     
-    OUIDocumentPickerBackgroundView *view = [[OUIDocumentPickerBackgroundView alloc] initWithFrame:CGRectMake(0, 0, kStartingSize, kStartingSize)];
-    view.autoresizesSubviews = YES;
+    OUIToolbarViewControllerBackgroundView *view = [[OUIToolbarViewControllerBackgroundView alloc] initWithFrame:CGRectMake(0, 0, kStartingSize, kStartingSize)];
     
-    [view setAutoresizingMask:UIViewAutoresizingFlexibleWidth|UIViewAutoresizingFlexibleHeight];
-
-    _toolbar = [[UIToolbar alloc] initWithFrame:CGRectMake(0, 0, kStartingSize, kToolbarHeight)];
-    _toolbar.barStyle = UIBarStyleBlack;
-    [_toolbar setAutoresizingMask:UIViewAutoresizingFlexibleWidth|UIViewAutoresizingFlexibleBottomMargin];
-
-    // Get the height right, without letting the toolbar get super wide before our view gets sized to window size.
-    [_toolbar sizeToFit];
-    CGRect toolbarFrame = _toolbar.frame;
-    toolbarFrame.size.width = view.bounds.size.width;
-    _toolbar.frame = toolbarFrame;
-    [view addSubview:_toolbar];
-    
-    _contentView = [[UIView alloc] initWithFrame:CGRectMake(0, CGRectGetHeight(toolbarFrame), kStartingSize, kStartingSize - CGRectGetHeight(toolbarFrame))];
-    [_contentView setAutoresizingMask:UIViewAutoresizingFlexibleWidth|UIViewAutoresizingFlexibleHeight];
-    [view addSubview:_contentView];
-
     // If there was a low memory warning, we might actually be getting called for the second time.
     if (_innerViewController) {
         [self _prepareViewControllerForContainment:_innerViewController hidden:NO];
-        [_toolbar setItems:_innerViewController.toolbarItems animated:NO];
+        [view.toolbar setItems:_innerViewController.toolbarItems animated:NO];
     }
 
     [self setView:view];
     [view release];
-}
-
-- (void)viewDidUnload;
-{
-    [super viewDidUnload];
-    
-    [_toolbar release];
-    _toolbar = nil;
-    
-    [_contentView release];
-    _contentView = nil;
 }
 
 - (BOOL)shouldAutorotateToInterfaceOrientation:(UIInterfaceOrientation)toInterfaceOrientation;
@@ -453,6 +461,17 @@ NSString * const OUIToolbarViewControllerResizedForKeyboard = @"OUIToolbarViewCo
 {
     [super didRotateFromInterfaceOrientation:fromInterfaceOrientation];
     [_innerViewController didRotateFromInterfaceOrientation:fromInterfaceOrientation];
+}
+
+#pragma mark -
+#pragma mark UIResponder subclass
+
+- (NSUndoManager *)undoManager;
+{
+    // By default, if you send -undoManager to a view, it'll go up the responder chain and if it doesn't find one, UIWindow will create one.
+    // We want to ensure that we don't get an implicitly created undo manager (OUIDocument/OUISingleDocumentAppController have other assertions to make sure that only the document's undo manager is used).
+    OBASSERT_NOT_REACHED("This is probably not the -undoManager you want");
+    return nil;
 }
 
 @end

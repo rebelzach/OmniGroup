@@ -11,6 +11,7 @@
 
 @interface LayerShadowPathDemo : LayerShadowDemo
 {
+@private
     CGRect _pathRect;
     CGPathRef _path;
 }

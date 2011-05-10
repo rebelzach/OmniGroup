@@ -1,4 +1,4 @@
-// Copyright 1997-2008, 2010 Omni Development, Inc.  All rights reserved.
+// Copyright 1997-2008, 2010-2011 Omni Development, Inc.  All rights reserved.
 //
 // This software may only be used and reproduced according to the
 // terms in the file OmniSourceLicense.html, which should be
@@ -14,8 +14,6 @@
 #include <stdlib.h>
 
 RCS_ID("$Id$")
-
-NSString * const OmniDictionaryElementNameKey = @"__omniDictionaryElementNameKey";
 
 #if !defined(TARGET_OS_IPHONE) || !TARGET_OS_IPHONE
     #define CGPointValue pointValue
@@ -159,6 +157,40 @@ nochange_noalloc:
         if ([[self objectForKey:key] isEqual:anObject])
 	    return key;
     return nil;
+}
+
+- (NSString *)stringForKey:(NSString *)key defaultValue:(NSString *)defaultValue;
+{
+    id object = [self objectForKey:key];
+    if (![object isKindOfClass:[NSString class]])
+        return defaultValue;
+    return object;
+}
+
+- (NSString *)stringForKey:(NSString *)key;
+{
+    return [self stringForKey:key defaultValue:nil];
+}
+
+- (NSArray *)stringArrayForKey:(NSString *)key defaultValue:(NSArray *)defaultValue;
+{
+#ifdef OMNI_ASSERTIONS_ON
+    for (id value in defaultValue)
+        OBPRECONDITION([value isKindOfClass:[NSString class]]);
+#endif
+    NSArray *array = [self objectForKey:key];
+    if (![array isKindOfClass:[NSArray class]])
+        return defaultValue;
+    for (id value in array) {
+        if (![value isKindOfClass:[NSString class]])
+            return defaultValue;
+    }
+    return array;
+}
+
+- (NSArray *)stringArrayForKey:(NSString *)key;
+{
+    return [self stringArrayForKey:key defaultValue:nil];
 }
 
 - (float)floatForKey:(NSString *)key defaultValue:(float)defaultValue;
@@ -383,6 +415,16 @@ static id copyDictionaryKeys(CFDictionaryRef self, Class resultClass)
 /*.doc. Just like -allKeys on NSDictionary, except that it doesn't autorelease the result but returns a newly created mutable array. */
 {
     return copyDictionaryKeys((CFDictionaryRef)self, [NSMutableArray class]);
+}
+
+- (NSArray *) copyKeySet;
+{
+    return copyDictionaryKeys((CFDictionaryRef)self, [NSSet class]);
+}
+
+- (NSMutableArray *) mutableCopyKeySet;
+{
+    return copyDictionaryKeys((CFDictionaryRef)self, [NSMutableSet class]);
 }
 
 @end

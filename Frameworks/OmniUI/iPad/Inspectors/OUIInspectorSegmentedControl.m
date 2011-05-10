@@ -1,4 +1,4 @@
-// Copyright 2010 The Omni Group.  All rights reserved.
+// Copyright 2010-2011 The Omni Group. All rights reserved.
 //
 // This software may only be used and reproduced according to the
 // terms in the file OmniSourceLicense.html, which should be
@@ -17,7 +17,7 @@ static const CGFloat kButtonWidth = 57;
 static const CGFloat kButtonHeight = 38;
 
 @interface OUIInspectorSegmentedControl (/*Private*/)
-- (void)_segmentPressed:(id)sender;
+- (void)_segmentPressed:(OUIInspectorSegmentedControlButton *)segment;
 @end
 
 @implementation OUIInspectorSegmentedControl
@@ -55,7 +55,7 @@ static id _commonInit(OUIInspectorSegmentedControl *self)
     OUIInspectorSegmentedControlButton *segment = [OUIInspectorSegmentedControlButton buttonWithType:UIButtonTypeCustom];
     segment.image = [UIImage imageNamed:imageName];
     segment.representedObject = representedObject;
-    [segment addTarget:self action:@selector(_segmentPressed:) forControlEvents:UIControlEventTouchDown];
+    [segment addTarget:self action:@selector(_segmentPressed:)];
     [_segments addObject:segment];
     [self setNeedsLayout];
     return segment;
@@ -71,7 +71,7 @@ static id _commonInit(OUIInspectorSegmentedControl *self)
     OUIInspectorSegmentedControlButton *segment = [OUIInspectorSegmentedControlButton buttonWithType:UIButtonTypeCustom];
     [segment setTitle:text forState:UIControlStateNormal];
     segment.representedObject = representedObject;
-    [segment addTarget:self action:@selector(_segmentPressed:) forControlEvents:UIControlEventTouchDown];
+    [segment addTarget:self action:@selector(_segmentPressed:)];
     [_segments addObject:segment];
     [self setNeedsLayout];
     return segment;
@@ -81,6 +81,25 @@ static id _commonInit(OUIInspectorSegmentedControl *self)
 {
     return [self addSegmentWithText:text representedObject:nil];
 }
+
+@synthesize allowsMulitpleSelection = _allowsMulitpleSelection;
+- (void)setAllowsMulitpleSelection:(BOOL)flag;
+{
+    if (_allowsMulitpleSelection == flag)
+        return;
+    
+    _allowsMulitpleSelection = flag;
+    
+    if (!_allowsMulitpleSelection) {
+        // Clear any extra selected items after the first
+        OUIInspectorSegmentedControlButton *firstSelectedSegment = self.selectedSegment;
+        for (OUIInspectorSegmentedControlButton *segment in _segments)
+            if (segment.selected && firstSelectedSegment != segment)
+                segment.selected = NO;
+    }
+}
+
+@synthesize allowsEmptySelection = _allowsEmptySelection;
 
 @synthesize sizesSegmentsToFit = _sizesSegmentsToFit;
 - (void)setSizesSegmentsToFit:(BOOL)flag;
@@ -162,7 +181,18 @@ static id _commonInit(OUIInspectorSegmentedControl *self)
 }
 
 #pragma mark -
+#pragma mark UIView (OUIExtensions)
+
+- (UIEdgeInsets)borderEdgeInsets
+{
+    // Really we should implement this on the buttons and then have the lookups recurse, but our button subviews aren't likely to be used anywhere else.
+    // 1px space at the top, 1px white shadow at the bottom.
+    return UIEdgeInsetsMake(1/*top*/, 0/*left*/, 1/*bottom*/, 0/*right*/);
+}
+
+#pragma mark -
 #pragma mark UIView subclass
+
 - (void)layoutSubviews;
 {
     OBPRECONDITION([_segments count] >= 2); // Else, why are you using a segmented control at all...
@@ -227,7 +257,13 @@ static id _commonInit(OUIInspectorSegmentedControl *self)
 
 - (void)_segmentPressed:(OUIInspectorSegmentedControlButton *)segment;
 {
-    self.selectedSegment = segment;
+    if (_allowsMulitpleSelection) {
+        segment.selected = !segment.selected;
+    } else if (_allowsEmptySelection && self.selectedSegment == segment) {
+        self.selectedSegment = nil;
+    } else {
+        self.selectedSegment = segment;
+    }
     [self sendActionsForControlEvents:UIControlEventValueChanged];
 }
 

@@ -1,11 +1,11 @@
-// Copyright 2010 The Omni Group.  All rights reserved.
+// Copyright 2010-2011 The Omni Group. All rights reserved.
 //
 // This software may only be used and reproduced according to the
 // terms in the file OmniSourceLicense.html, which should be
 // distributed with this project and can also be found at
 // <http://www.omnigroup.com/developer/sourcecode/sourcelicense/>.
 
-#import "OUIComponentColorPicker.h"
+#import <OmniUI/OUIComponentColorPicker.h>
 
 #import <OmniUI/OUIColorComponentSlider.h>
 #import <OmniUI/OUIInspectorSelectionValue.h>
@@ -54,6 +54,24 @@ RCS_ID("$Id$");
 
 #pragma mark -
 #pragma mark OUIColorPicker subclass
+
+- (OUIColorPickerFidelity)fidelityForSelectionValue:(OUIInspectorSelectionValue *)selectionValue;
+{
+    OQColor *color = selectionValue.dominantValue;
+    if (!color)
+        // Slider-based color pickers can't represent "no color"
+        return OUIColorPickerFidelityZero;
+        
+    OQColorSpace colorSpace = [color colorSpace];
+    if (colorSpace == OQColorSpacePattern || colorSpace == OQColorSpaceNamed) {
+        OBASSERT_NOT_REACHED("We don't yet have pattern/named color pickers, if ever");
+        return OUIColorPickerFidelityZero;
+    }
+    
+    if (colorSpace == [self colorSpace])
+        return OUIColorPickerFidelityExact;
+    return OUIColorPickerFidelityApproximate;
+}
 
 - (void)setSelectionValue:(OUIInspectorSelectionValue *)selectionValue;
 {
@@ -104,6 +122,7 @@ RCS_ID("$Id$");
     
     [self _updateSliderValuesFromColor];
     [self setView:view];
+    [view release];
 }
 
 - (void)viewDidUnload;

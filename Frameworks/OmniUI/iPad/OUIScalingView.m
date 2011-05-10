@@ -1,4 +1,4 @@
-// Copyright 2010 The Omni Group.  All rights reserved.
+// Copyright 2010-2011 The Omni Group.  All rights reserved.
 //
 // This software may only be used and reproduced according to the
 // terms in the file OmniSourceLicense.html, which should be
@@ -9,6 +9,7 @@
 #import <UIKit/UIKit.h>
 #import <QuartzCore/QuartzCore.h>
 #import <OmniQuartz/OQDrawing.h>
+#import <OmniUI/UIView-OUIExtensions.h>
 
 #import <OmniBase/rcsid.h>
 #import <OmniBase/assertions.h>
@@ -38,7 +39,14 @@ static id _commonInit(OUIScalingView *self)
     return _commonInit(self);
 }
 
-// DO NOT set this directly for now. Only should be mucked with via GraphViewController and its UIScrollView (or code needs rearranging to support direct mucking)
+- (void)dealloc;
+{
+    [_shadowEdgeViews release];
+    
+    [super dealloc];
+}
+
+// If this view is within a OUIScalingScrollView, then this property should be considered read-only and the scale should be adjusted via its methods.
 @synthesize scale = _scale;
 - (void)setScale:(CGFloat)scale;
 {
@@ -47,11 +55,15 @@ static id _commonInit(OUIScalingView *self)
         return;
     
     _scale = scale;
-    [self scaleChanged];
     [self setNeedsDisplay];
 }
 
 - (void)scaleChanged;
+{
+    // for subclasses
+}
+
+- (void)scrollPositionChanged;
 {
     // for subclasses
 }
@@ -198,13 +210,51 @@ static id _commonInit(OUIScalingView *self)
     return data;
 }
 
+@synthesize wantsShadowEdges = _wantsShadowEdges;
+
+- (void)updateShadowEdgeViews;
+{
+    if (!self.wantsShadowEdges)
+        return;
+    
+    if (!_shadowEdgeViews)
+        _shadowEdgeViews = [OUIViewAddShadowEdges(self) copy];
+    OUIViewLayoutShadowEdges(self, _shadowEdgeViews, YES/*flipped*/);
+}
+
+- (void)setShadowEdgeViewVisibility:(BOOL)visible;
+{
+    if (!self.wantsShadowEdges)
+        return;
+    
+    if (visible) {
+        for (UIView *view in _shadowEdgeViews) {
+            [self addSubview:view];
+        }
+    }
+    else {
+        [_shadowEdgeViews makeObjectsPerformSelector:@selector(removeFromSuperview)];
+    }
+}
+
 #pragma mark UIView subclass
 
 - (void)drawRect:(CGRect)rect;
 {
     CGContextRef ctx = UIGraphicsGetCurrentContext();
-    [self establishTransformToRenderingSpace:ctx];
-    [self drawScaledContent:rect];
+    CGContextSaveGState(ctx); // for subclasses that draw unscaled content atop the scaled content (like the border in OO/iPad text cells).
+    {
+        [self establishTransformToRenderingSpace:ctx];
+        [self drawScaledContent:rect];
+    }
+    CGContextRestoreGState(ctx);
+}
+
+- (void)layoutSubviews;
+{
+    if (self.wantsShadowEdges) {
+        [self updateShadowEdgeViews];
+    }
 }
 
 @end

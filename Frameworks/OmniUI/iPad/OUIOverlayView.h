@@ -31,9 +31,13 @@
 
 - (CGSize)suggestedSize;
 
+- (void)resetDefaults;
+
 @property(retain,nonatomic) NSString *text;
+@property(nonatomic) CGFloat fontSize;
 @property(assign,nonatomic) CGSize borderSize;
 @property(assign,nonatomic) NSTimeInterval messageDisplayInterval;  // seconds
+@property(readonly, nonatomic) BOOL isVisible;
 
 - (void)avoidTouchPoint:(CGPoint)touchPoint withinBounds:(CGRect)superBounds;
 

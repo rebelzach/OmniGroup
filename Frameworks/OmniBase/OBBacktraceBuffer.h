@@ -11,28 +11,28 @@
  This is an internal header for OmniBase and OmniCrashCatcher to communicate information about the backtrace buffer. Other code shouldn't need to see it.
 */
 
-#define OBBacktraceBufferAddressCount 16
-#define OBBacktraceBufferTraceCount 8
-
-enum OBBacktraceBufferType {
-    OBBacktraceBuffer_Unused = 0,
-    OBBacktraceBuffer_Allocated = 1,
-    OBBacktraceBuffer_OBAssertionFailure = 2
-};
+/* These can be adjusted as needed */
+#define OBBacktraceBufferAddressCount 16    /* Max depth of stack to record per trace */
+#define OBBacktraceBufferTraceCount 8       /* Number of recent traces to retain */
 
 struct OBBacktraceBuffer {
-    volatile int type;
-    uintptr_t context;
+    volatile uintptr_t type;
+    const char *context;
+    uintptr_t tv_sec, tv_usec;
     void *frames[OBBacktraceBufferAddressCount];
 };
 
-#define OBBacktraceBufferInfoVersionMagic  2
+#define OBBacktraceBufferInfoVersionMagic  3
 struct OBBacktraceBufferInfo {
+    // The first four fields provide info for CrashCatcher
     unsigned char version;
     unsigned char infoSize;
     unsigned char addressesPerTrace;
     unsigned char traceCount;
-    uintptr_t backtraces;
-    uintptr_t nextTrace;
+    
+    // A pointer to the array of backtrace buffers
+    struct OBBacktraceBuffer *backtraces;
+    // A pointer to the integer which holds the index of the next free buffer entry
+    volatile int32_t *nextTrace;
 };
 

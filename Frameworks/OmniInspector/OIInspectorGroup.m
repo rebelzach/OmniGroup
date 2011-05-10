@@ -1,4 +1,4 @@
-// Copyright 2002-2007, 2010 Omni Development, Inc.  All rights reserved.
+// Copyright 2002-2007, 2010-2011 Omni Development, Inc.  All rights reserved.
 //
 // This software may only be used and reproduced according to the
 // terms in the file OmniSourceLicense.html, which should be
@@ -305,7 +305,7 @@ This method iterates over the inspectors controllers in each visible inspector g
 
 - init;
 {
-    if ([super init] == nil)
+    if (!(self = [super init]))
         return nil;
     
     [existingGroups addObject:self];
@@ -420,15 +420,15 @@ This method iterates over the inspectors controllers in each visible inspector g
     OIInspectorGroup *newGroup = [[[OIInspectorGroup alloc] init] autorelease];
     OBASSERT([existingGroups indexOfObjectIdenticalTo:newGroup]); // It is in this array and retained by it.
     
-    NSUInteger inpectorCount = [_inspectors count];
+    NSUInteger inspectorCount = [_inspectors count];
     
     [self disconnectWindows];
     
-    for (NSUInteger inspectorIndex = originalIndex; inspectorIndex < inpectorCount; inspectorIndex++) {
+    for (NSUInteger inspectorIndex = originalIndex; inspectorIndex < inspectorCount; inspectorIndex++) {
         OIInspectorController *controller = [_inspectors objectAtIndex:inspectorIndex];
         [newGroup addInspector:controller];
     }
-    [_inspectors removeObjectsInRange:NSMakeRange(originalIndex, inpectorCount - originalIndex)];  
+    [_inspectors removeObjectsInRange:NSMakeRange(originalIndex, inspectorCount - originalIndex)];  
 
     [self connectWindows];
     [newGroup connectWindows];
@@ -1168,7 +1168,6 @@ static NSComparisonResult sortByGroupAndDisplayOrder(OIInspectorController *a, O
 {
     NSUInteger index, count, itemIndex;
     NSUInteger lastGroupIdentifier;
-    NSMenuItem *item;
     NSBundle *bundle = [OIInspectorGroup bundle];
         
     // Both the controllers and the dynamic menus need to be set up before this should be called.  See -[OIDynamicInspectorMenuItem awakeFromNib] and -[OIInspectorRegistry _awakeAtLaunch].  The ordering of these two methods is indeterminate so both will provoke this method and the last one will actually cause us to do the work.
@@ -1180,13 +1179,18 @@ static NSComparisonResult sortByGroupAndDisplayOrder(OIInspectorController *a, O
     itemIndex = dynamicMenuItemIndex;
 
     if (useWorkspaces && !useASeparateMenuForWorkspaces) {
-        item = [[[NSMenuItem alloc] initWithTitle:NSLocalizedStringFromTableInBundle(@"Workspace", @"OmniInspector", bundle, @"Workspace submenu item") action:NULL keyEquivalent:@""] autorelease];
+        NSMenuItem *item = [[[NSMenuItem alloc] initWithTitle:NSLocalizedStringFromTableInBundle(@"Workspace", @"OmniInspector", bundle, @"Workspace submenu item") action:NULL keyEquivalent:@""] autorelease];
         [item setSubmenu:[[OIInspectorRegistry sharedInspector] workspaceMenu]];
-    } else {
-        item = [[OIInspectorRegistry sharedInspector] resetPanelsItem];
+        [dynamicMenu insertItem:item atIndex:itemIndex++];
+        
+    } else if (![[OIInspectorRegistry sharedInspector] hasSingleInspector]) {   // If we just have one inspector, don't offer an option to reset the inspectors
+        [dynamicMenu insertItem:[[OIInspectorRegistry sharedInspector] resetPanelsItem] atIndex:itemIndex++];
     }
-    [dynamicMenu insertItem:item atIndex:itemIndex++];
-    [dynamicMenu insertItem:[NSMenuItem separatorItem] atIndex:itemIndex++];
+    
+    // If there are menu items above us in the menu, insert a separator item between them and the inspector menu items we're about to insert
+    if (itemIndex != 0) {
+        [dynamicMenu insertItem:[NSMenuItem separatorItem] atIndex:itemIndex++];
+    }
             
     controllers = [controllers sortedArrayUsingFunction:sortByGroupAndDisplayOrder context:NULL];
     count = [controllers count];

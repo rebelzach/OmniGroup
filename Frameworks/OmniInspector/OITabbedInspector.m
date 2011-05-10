@@ -1,4 +1,4 @@
-// Copyright 2005-2007, 2010 Omni Development, Inc.  All rights reserved.
+// Copyright 2005-2007, 2010-2011 Omni Development, Inc.  All rights reserved.
 //
 // This software may only be used and reproduced according to the
 // terms in the file OmniSourceLicense.html, which should be
@@ -12,6 +12,7 @@
 #import <OmniFoundation/OmniFoundation.h>
 #import <OmniAppKit/OmniAppKit.h>
 
+#import "OIInspectionSet.h"
 #import "OIInspectorController.h"
 #import "OIInspectorRegistry.h"
 #import "OIInspectorTabController.h"
@@ -22,6 +23,7 @@
 RCS_ID("$Id$")
 
 @interface OITabbedInspector (/*Private*/)
+- (void)_selectTabBasedOnObjects:(NSArray *)objects;
 - (OIInspectorTabController *)_tabWithIdentifier:(NSString *)identifier;
 - (void)_updateDimmedForTab:(OIInspectorTabController *)tab;
 - (void)_updateSubInspectorObjects;
@@ -30,6 +32,7 @@ RCS_ID("$Id$")
 - (void)_tabTitleDidChange:(NSNotification *)notification;
 - (void)_layoutSelectedTabs;
 - (void)_updateButtonsToMatchSelection;
+- (OIInspectorTabController *)_tabControllerForInspectorView:(NSView *)view;
 @end
 
 #pragma mark -
@@ -377,11 +380,11 @@ RCS_ID("$Id$")
 
 - initWithDictionary:(NSDictionary *)dict bundle:(NSBundle *)sourceBundle;
 {
-    if (![super initWithDictionary:dict bundle:sourceBundle])
+    if (!(self = [super initWithDictionary:dict bundle:sourceBundle]))
 	return nil;
     
-    
     _singleSelection = [dict boolForKey:@"single-selection" defaultValue:NO];
+    _autoSelection = [dict boolForKey:@"auto-selection" defaultValue:_singleSelection];
     
     NSMutableArray *tabControllers = [[NSMutableArray alloc] init];
     
@@ -447,6 +450,19 @@ RCS_ID("$Id$")
     return menuItems;
 }
 
+- (void)inspectorDidResize:(OIInspector *)resizedInspector;
+{
+    OBASSERT(resizedInspector != self); // Don't call us if we are the resized inspector, only on ancestors of that inspector
+    NSView *resizedView = [resizedInspector inspectorView];
+    OIInspectorTabController *tab = [self _tabControllerForInspectorView:resizedView];
+    OBASSERT(tab != nil);   // Don't call us if we aren't an ancestor of the resized inspector
+    OIInspector *tabInspector = [tab inspector];
+    if (tabInspector != resizedInspector) {
+        [tabInspector inspectorDidResize:resizedInspector];
+    }
+    [self _layoutSelectedTabs];
+}
+
 #pragma mark -
 #pragma mark OIConcreteInspector protocol
 
@@ -472,6 +488,9 @@ RCS_ID("$Id$")
     // list will be nil when we are collapsed
     _shouldInspectNothing = (list == nil);
     [self _updateSubInspectorObjects];
+    
+    if (_autoSelection && [list count] > 0 && [[self pinnedTabIdentifiers] count] == 0)
+        [self _selectTabBasedOnObjects:list];
 }
 
 
@@ -495,6 +514,14 @@ RCS_ID("$Id$")
 - (void)setInspectorController:(OIInspectorController *)aController;
 {
     _nonretained_inspectorController = aController;
+
+    // Set the controller on all of our child inspectors as well
+    for (OIInspectorTabController *tab in _tabControllers) {
+        OIInspector *inspector = [tab inspector];
+        if ([inspector respondsToSelector:_cmd]) {
+            [inspector setInspectorController:aController];
+        }
+    }
 }
 
 #pragma mark -
@@ -516,6 +543,36 @@ RCS_ID("$Id$")
 
 #pragma mark -
 #pragma mark Private
+
+- (void)_selectTabBasedOnObjects:(NSArray *)objects;
+{
+    // Find the 'most relevant' object that has an inspector that directly applies to it.  This depends on the objects getting added to the inspection set in the right order.
+    OIInspectionSet *inspectionSet = [[OIInspectorRegistry sharedInspector] inspectionSet];
+    NSArray *sortedObjects = [inspectionSet objectsSortedByInsertionOrder:objects];
+    
+    if (0) {
+        NSUInteger objectIndex, objectCount = [sortedObjects count];
+        for (objectIndex = 0; objectIndex < objectCount; objectIndex++) {
+            id object = [sortedObjects objectAtIndex:objectIndex];
+            NSLog(@"%ld - %@", [inspectionSet insertionOrderForObject:object], [object shortDescription]);
+        }
+    }
+    
+    NSArray *tabIdentifiers = [self tabIdentifiers];
+    
+    for (id object in sortedObjects) {
+        // Ask each of the tabs if this tab is the perfect match for the object
+        for (NSString *tabIdentifier in tabIdentifiers) {
+            OIInspector *inspector = [self inspectorWithIdentifier:tabIdentifier];
+            if ([inspector shouldBeUsedForObject:object]) {
+                [self setSelectedTabIdentifiers:[NSArray arrayWithObject:tabIdentifier] pinnedTabIdentifiers:[NSArray array]];
+                return;
+            }
+        }
+    }
+    
+    // Nothing appropriate found; just leave it.
+}
 
 - (OIInspectorTabController *)_tabWithIdentifier:(NSString *)identifier;
 {
@@ -662,7 +719,6 @@ RCS_ID("$Id$")
     
     // Any newly exposed inspectors should start tracking; any newly hidden should stop
     [self _updateSubInspectorObjects];
-    
 }
 
 - (void)_updateButtonsToMatchSelection;
@@ -679,6 +735,20 @@ RCS_ID("$Id$")
             [[matrixCells objectAtIndex:tabIndex] setIsPinned:YES];
     }
     [buttonMatrix setNeedsDisplay:YES];
+}
+
+- (OIInspectorTabController *)_tabControllerForInspectorView:(NSView *)view;
+{
+    for (OIInspectorTabController *tab in _tabControllers) {
+        if ([tab hasLoadedView]) {  // Avoid loading any UI that isn't already loaded - if it's not loaded, it can't be one we care about anyway
+            NSView *tabView = [tab inspectorView];
+            if ([view isDescendantOf:tabView]) {
+                return tab;
+            }
+        }
+    }
+    OBASSERT_NOT_REACHED("Don't call this on an inspector that isn't an ancestor of the view in question.");
+    return nil;
 }
 
 @end

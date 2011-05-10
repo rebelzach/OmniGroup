@@ -10,7 +10,9 @@
 
 @class DetailViewController;
 
-@interface RootViewController : UITableViewController {
+@interface RootViewController : UITableViewController
+{
+@private
     DetailViewController *detailViewController;
     NSArray *_demos;
 }

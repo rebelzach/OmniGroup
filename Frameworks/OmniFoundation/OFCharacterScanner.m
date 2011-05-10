@@ -1,4 +1,4 @@
-// Copyright 1997-2005, 2007-2008, 2010 Omni Development, Inc.  All rights reserved.
+// Copyright 1997-2005, 2007-2008, 2010-2011 Omni Development, Inc.  All rights reserved.
 //
 // This software may only be used and reproduced according to the
 // terms in the file OmniSourceLicense.html, which should be
@@ -37,8 +37,8 @@ static inline int unicharDigitValue(unichar c)
 
 - init;
 {
-    if ([super init] == nil)
-	return nil;
+    if (!(self = [super init]))
+        return nil;
 
     inputBuffer = NULL;
     scanEnd = inputBuffer;
@@ -576,6 +576,11 @@ readFullTokenWithDelimiterCharacter(OFCharacterScanner *self, unichar delimiterC
         OBASSERT([result length] == count);
         return result;
    }
+}
+
+- (NSString *)readRemainingBufferedCharacters;
+{
+    return [self readCharacterCount:scanEnd - scanLocation];
 }
 
 - (unsigned int)scanHexadecimalNumberMaximumDigits:(unsigned int)maximumDigits;

@@ -1,4 +1,4 @@
-// Copyright 1998-2008, 2010 Omni Development, Inc.  All rights reserved.
+// Copyright 1998-2008, 2010-2011 Omni Development, Inc.  All rights reserved.
 //
 // This software may only be used and reproduced according to the
 // terms in the file OmniSourceLicense.html, which should be
@@ -132,33 +132,33 @@ static void _OFControllerCheckTerminated(void)
     // Ensure that +sharedController and nib loading produce a single instance
     OBPRECONDITION(!sharedController || [self class] == [sharedController class]); // Need to set OFControllerClass otherwise
     
-    if (self == sharedController) {        
-        // We are setting up the shared instance in +sharedController
-	if ([super init] == nil)
-	    return nil;
-	
-	NSExceptionHandler *handler = [NSExceptionHandler defaultExceptionHandler];
-	[handler setDelegate:self];
-	[handler setExceptionHandlingMask:[self exceptionHandlingMask]];
-        
-	// NSAssertionHandler's documentation says this is the way to customize assertion handling
-	[[[NSThread currentThread] threadDictionary] setObject:self forKey:@"NSAssertionHandler"];
-	
-	observerLock = [[NSLock alloc] init];
-	status = OFControllerNotInitializedStatus;
-	observers = [[NSMutableArray alloc] init];
-	postponingObservers = [[NSMutableSet alloc] init];
-        
-#ifdef OMNI_ASSERTIONS_ON
-        atexit(_OFControllerCheckTerminated);
-#endif
-        
-	return self;
-    } else {        
+    if (self != sharedController) {
         // Nib loading calls +alloc/-init directly.  Make sure that it gets the shared instance.
 	[self release];
 	return [[OFController sharedController] retain];
     }
+        
+    // We are setting up the shared instance in +sharedController
+    if (!(self = [super init]))
+        return nil;
+    
+    NSExceptionHandler *handler = [NSExceptionHandler defaultExceptionHandler];
+    [handler setDelegate:self];
+    [handler setExceptionHandlingMask:[self exceptionHandlingMask]];
+    
+    // NSAssertionHandler's documentation says this is the way to customize assertion handling
+    [[[NSThread currentThread] threadDictionary] setObject:self forKey:@"NSAssertionHandler"];
+    
+    observerLock = [[NSLock alloc] init];
+    status = OFControllerNotInitializedStatus;
+    observers = [[NSMutableArray alloc] init];
+    postponingObservers = [[NSMutableSet alloc] init];
+    
+#ifdef OMNI_ASSERTIONS_ON
+    atexit(_OFControllerCheckTerminated);
+#endif
+    
+    return self;
 }
 
 - (void)dealloc;
@@ -366,6 +366,26 @@ static void _OFControllerCheckTerminated(void)
 
 - (NSString *)copySymbolicBacktraceForNumericBacktrace:(NSString *)numericTrace;
 {
+#if 1
+ // #include <execinfo.h>
+ // #include <stdio.h>
+    NSArray *stackStrings = [numericTrace componentsSeparatedByString:@"  "];
+    NSUInteger frameCount = [stackStrings count];
+    void *callstack[frameCount];
+    for (NSString *stackString in stackStrings) {
+         callstack[frameCount] = (void *)(uintptr_t)[stackString maxHexValue];
+    }
+    OBASSERT(frameCount <= UINT_MAX); // That's all backtrace_symbols() can handle
+    char **symbols = backtrace_symbols(callstack, (unsigned int)frameCount);
+    unsigned int frameIndex;
+    NSMutableString *symbolicBacktrace = [[NSMutableString alloc] init];
+    for (frameIndex = 0; frameIndex < frameCount; frameIndex++) {
+        [symbolicBacktrace appendFormat:@"%08u -- %s", callstack[frameIndex], symbols[frameIndex]];
+        printf("%s\n", symbols[frameIndex]);
+    }
+    free(symbols);
+    return symbolicBacktrace;
+#else
     // atos is in the developer tools package, so it might not be present
     NSString *atosPath = @"/usr/bin/atos";
     if (![[NSFileManager defaultManager] isExecutableFileAtPath:atosPath])
@@ -395,8 +415,8 @@ static void _OFControllerCheckTerminated(void)
         // This method can get called for unhandled exceptions, so let's not have any.
         outputString = [[NSString alloc] initWithFormat:@"Exception raised while converting numeric backtrace: %@\n%@", numericTrace, exc];
     }
-    
     return outputString;
+#endif
 }
 
 // Allow subclasses to override this
@@ -438,6 +458,7 @@ static void _OFControllerCheckTerminated(void)
 
 - (void)handleUncaughtException:(NSException *)exception;
 {
+    OBRecordBacktrace(NULL, OBBacktraceBuffer_NSException);
     [self crashWithException:exception mask:NSLogUncaughtExceptionMask];
 }
 
@@ -468,6 +489,8 @@ static void _OFControllerCheckTerminated(void)
 	return; // Skip since we apparently screwed up
     handlingAssertion = YES;
 
+    OBRecordBacktrace(NULL, OBBacktraceBuffer_NSAssertionFailure);
+    
     if (![self crashOnAssertionOrUnhandledException]) {
 	NSString *numericTrace = [self _copyNumericBacktraceString:0];
 	NSString *symbolicTrace = [self copySymbolicBacktraceForNumericBacktrace:numericTrace];
@@ -501,6 +524,8 @@ static void _OFControllerCheckTerminated(void)
 	return; // Skip since we apparently screwed up
     handlingAssertion = YES;
     
+    OBRecordBacktrace(NULL, OBBacktraceBuffer_NSAssertionFailure);
+
     if (![self crashOnAssertionOrUnhandledException]) {
 	NSString *symbolicTrace = [self copySymbolicBacktrace];
 	
@@ -531,6 +556,8 @@ static NSString * const OFControllerAssertionHandlerException = @"OFControllerAs
 
 - (BOOL)exceptionHandler:(NSExceptionHandler *)sender shouldLogException:(NSException *)exception mask:(NSUInteger)aMask;
 {
+    OBRecordBacktrace(NULL, OBBacktraceBuffer_NSException);
+
     if ([self crashOnAssertionOrUnhandledException] && ((aMask & NSLogUncaughtExceptionMask) != 0)) {
         [self crashWithException:exception mask:aMask];
         return YES; // normal handler; we shouldn't get here, though.

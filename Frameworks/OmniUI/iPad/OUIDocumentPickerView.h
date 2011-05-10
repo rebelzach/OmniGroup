@@ -13,6 +13,7 @@ extern NSString * const OUIDocumentPickerViewProxiesBinding;
 
 @class OFPreference;
 @class OUIDocumentProxy, OUIDocumentPickerView;
+@class OUIDocumentSlider;
 
 typedef struct {
     NSTimer *timer;
@@ -22,6 +23,11 @@ typedef struct {
     CFTimeInterval t0;
     BOOL bouncing;
 } OUIDocumentPickerViewSmoothScroll;
+
+typedef enum {
+    OUIDocumentProxySortByDate,
+    OUIDocumentProxySortByName,
+} OUIDocumentProxySort;
 
 @protocol OUIDocumentPickerViewDelegate <UIScrollViewDelegate>
 - (void)documentPickerView:(OUIDocumentPickerView *)pickerView didSelectProxy:(OUIDocumentProxy *)proxy;
@@ -44,6 +50,13 @@ typedef struct {
         unsigned int needsRecentering:1;
         unsigned int isRotating:1;
     } _flags;
+    
+    BOOL _disableScroll;     // we are turning off UIScrollView scrolling already, needed a different flag
+    BOOL _disableRotationDisplay;
+
+    IBOutlet OUIDocumentSlider *_documentSlider;
+    
+    OUIDocumentProxySort _proxySort;
 }
 
 @property(nonatomic,assign) id <OUIDocumentPickerViewDelegate> delegate;
@@ -60,10 +73,17 @@ typedef struct {
 - (OUIDocumentProxy *)proxyToRightOfProxy:(OUIDocumentProxy *)proxy;
 
 - (void)snapToProxy:(OUIDocumentProxy *)proxy animated:(BOOL)animated;
+- (void)sortProxies;
 
 @property(readonly,nonatomic) OUIDocumentProxy *selectedProxy;
 
 - (void)willRotate;
 - (void)didRotate;
 
+@property(assign) BOOL disableScroll;
+@property(assign) BOOL disableRotationDisplay;
+
+- (IBAction)documentSliderAction:(OUIDocumentSlider *)slider;
+
+@property(nonatomic) OUIDocumentProxySort proxySort;
 @end

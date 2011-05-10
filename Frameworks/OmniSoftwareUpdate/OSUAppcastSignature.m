@@ -31,6 +31,12 @@ RCS_ID("$Id$");
 
 @synthesize trustedKeys;
 
+- (void)dealloc;
+{
+    [trustedKeys release];
+    [super dealloc];
+}
+
 static void stashError(NSMutableDictionary *errorInfo, OSStatus code, NSString *where)
 {
     NSDictionary *userInfo;
@@ -101,7 +107,7 @@ static void stashError(NSMutableDictionary *errorInfo, OSStatus code, NSString *
         CFRelease(certGroup);
         
         if (err != noErr) {
-            NSLog(@"SecTrustCreateWithCertificates returns %ld", (long)err);
+            NSLog(@"SecTrustCreateWithCertificates returns %@", OFOSStatusDescription(err));
             continue;
         }
         
@@ -111,7 +117,7 @@ static void stashError(NSMutableDictionary *errorInfo, OSStatus code, NSString *
 //        if (err == noErr)
 //            err = SecTrustSetKeychains(evaluationContext, emptyArray);
         if (err != noErr) {
-            NSLog(@"SecTrustSet[AnchorCertificates|Keychains] returns %ld", (long)err);
+            NSLog(@"SecTrustSet[AnchorCertificates|Keychains] returns %@", OFOSStatusDescription(err));
             CFRelease(evaluationContext);
             continue;
         }
@@ -121,7 +127,7 @@ static void stashError(NSMutableDictionary *errorInfo, OSStatus code, NSString *
         SecTrustResultType trustResult;
         err = SecTrustEvaluate(evaluationContext, &trustResult);
         if (err != noErr) {
-            NSLog(@"SecTrustEvaluate returns %ld", (long)err);
+            NSLog(@"SecTrustEvaluate returns %@", OFOSStatusDescription(err));
             CFRelease(evaluationContext);
             continue;
         }
@@ -147,6 +153,7 @@ static void stashError(NSMutableDictionary *errorInfo, OSStatus code, NSString *
             } else {
                 errorInfo = nil; // Suppress overwrite of *outError
                 resultKey = [OFCSSMKey keyFromKeyRef:trustedSigningKey error:outError];
+                CFRelease(trustedSigningKey);
             }
         } else {
             [errorInfo setObject:OFSummarizeTrustResult(evaluationContext) forKey:@"trustResult"];

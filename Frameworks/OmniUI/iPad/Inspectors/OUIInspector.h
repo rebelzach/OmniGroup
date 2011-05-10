@@ -1,4 +1,4 @@
-// Copyright 2010 The Omni Group.  All rights reserved.
+// Copyright 2010-2011 The Omni Group. All rights reserved.
 //
 // This software may only be used and reproduced according to the
 // terms in the file OmniSourceLicense.html, which should be
@@ -8,10 +8,11 @@
 // $Id$
 
 #import <OmniFoundation/OFObject.h>
-#import "OUIInspectorDelegate.h"
+#import <OmniUI/OUIInspectorDelegate.h>
 #import <CoreGraphics/CGBase.h>
+#import <CoreText/CTStringAttributes.h>
 
-@class OUIInspectorStack, OUIInspectorSlice, OUIInspectorDetailSlice;
+@class OUIStackedSlicesInspectorPane, OUIInspectorPane, OUIInspectorSlice;
 @class UIBarButtonItem, UINavigationController, UIPopoverController;
 @class NSSet;
 
@@ -26,37 +27,49 @@ extern NSString * const OUIInspectorDidEndChangingInspectedObjectsNotification;
 @interface OUIInspector : OFObject
 {
 @private
-    OUIInspectorStack *_stack;
+    // We hold onto this in case we don't have a _navigationController to retain it on our behalf (if we have -isEmbededInOtherNavigationController subclassed to return YES).
+    OUIInspectorPane *_mainPane;
+    
     UINavigationController *_navigationController;
     UIPopoverController *_popoverController;
     
     id <OUIInspectorDelegate> _nonretained_delegate;
     
-    NSSet *_inspectedObjects;
     BOOL _isObservingNotifications;
-    BOOL _shouldShowDismissButton;
 }
 
 + (UIBarButtonItem *)inspectorBarButtonItemWithTarget:(id)target action:(SEL)action;
 
-@property(assign,nonatomic) id <OUIInspectorDelegate> delegate;
-@property(assign,nonatomic,readwrite,getter=hasDismissButton) BOOL hasDismissButton;
++ (UIColor *)disabledLabelTextColor;
++ (UIColor *)labelTextColor;
++ (UIFont *)labelFont;
 
-- (BOOL)isEmbededInOtherNavigationController; // If YES, this doesn't create a navigation or popover controller
+// Defaults to making a OUIStackedSlicesInspectorPane if mainPane is nil (or if -init is called).
+- initWithMainPane:(OUIInspectorPane *)mainPane;
+
+@property(assign,nonatomic) id <OUIInspectorDelegate> delegate;
+
+- (BOOL)isEmbededInOtherNavigationController; // Subclass to return YES if you intend to embed the inspector into a your own navigation controller (you might not yet have the navigation controller, though).
+- (UINavigationController *)embeddingNavigationController; // Needed when pushing detail panes with -isEmbededInOtherNavigationController.
 
 - (BOOL)isVisible;
-- (void)inspectObjects:(NSSet *)objects fromBarButtonItem:(UIBarButtonItem *)item;
-- (void)inspectObjects:(NSSet *)objects fromRect:(CGRect)rect inView:(UIView *)view permittedArrowDirections:(UIPopoverArrowDirection)arrowDirections;
-@property(readonly) NSSet *inspectedObjects;
+- (BOOL)inspectObjects:(NSSet *)objects fromBarButtonItem:(UIBarButtonItem *)item;
+- (BOOL)inspectObjects:(NSSet *)objects fromRect:(CGRect)rect inView:(UIView *)view permittedArrowDirections:(UIPopoverArrowDirection)arrowDirections;
 - (void)updateInterfaceFromInspectedObjects;
 - (void)dismiss;
 - (void)dismissAnimated:(BOOL)animated;
 
-- (void)pushDetailSlice:(OUIInspectorDetailSlice *)detail;
-- (void)popDetailSlice;
+- (NSArray *)slicesForStackedSlicesPane:(OUIStackedSlicesInspectorPane *)pane;
 
-// Call this from inspector slices/details when they change height
+@property(readonly,nonatomic) OUIInspectorPane *mainPane;
+
+- (void)pushPane:(OUIInspectorPane *)pane inspectingObjects:(NSSet *)inspectedObjects;
+- (void)pushPane:(OUIInspectorPane *)pane; // clones the inspected objects of the current top pane
+@property(readonly,nonatomic) OUIInspectorPane *topVisiblePane;
+
+// Call this from inspector slices/details when they change height or their response to -toolbarItems
 - (void)inspectorSizeChanged;
+- (void)updateInspectorToolbarItems:(BOOL)animated;
 
 - (void)willBeginChangingInspectedObjects; // start of ui action
 - (void)didEndChangingInspectedObjects;    // end of ui action
@@ -84,11 +97,11 @@ extern NSString * const OUIInspectorDidEndChangingInspectedObjectsNotification;
 - (CGFloat)fontSizeForInspectorSlice:(OUIInspectorSlice *)inspector;
 - (void)setFontSize:(CGFloat)fontSize fromInspectorSlice:(OUIInspectorSlice *)inspector;
 
-#if 0
-@optional  // TODO: Make this non-optional?
 - (CTUnderlineStyle)underlineStyleForInspectorSlice:(OUIInspectorSlice *)inspector;
 - (void)setUnderlineStyle:(CTUnderlineStyle)underlineStyle fromInspectorSlice:(OUIInspectorSlice *)inspector;
-#endif
+
+- (CTUnderlineStyle)strikethroughStyleForInspectorSlice:(OUIInspectorSlice *)inspector;
+- (void)setStrikethroughStyle:(CTUnderlineStyle)strikethroughStyle fromInspectorSlice:(OUIInspectorSlice *)inspector;
 
 @end
 

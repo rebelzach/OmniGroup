@@ -1,4 +1,4 @@
-// Copyright 2010 The Omni Group.  All rights reserved.
+// Copyright 2010-2011 The Omni Group.  All rights reserved.
 //
 // This software may only be used and reproduced according to the
 // terms in the file OmniSourceLicense.html, which should be
@@ -9,7 +9,10 @@
 
 #import <OmniFoundation/OFDataBuffer.h>
 #import <OmniFoundation/OFStringScanner.h>
+#import <OmniFoundation/NSDictionary-OFExtensions.h>
+#import <OmniFoundation/NSAttributedString-OFExtensions.h>
 #import <OmniAppKit/OAFontDescriptor.h>
+#import <OmniAppKit/OATextAttributes.h>
 
 #if defined(TARGET_OS_IPHONE) && TARGET_OS_IPHONE
 #import <CoreText/CTParagraphStyle.h>
@@ -26,7 +29,7 @@ RCS_ID("$Id$");
 
 @property (readwrite, retain) NSAttributedString *attributedString;
 
-- (NSData *)_rtfData;
+- (void)_writeRTFData:(OFDataBuffer *)dataBuffer;
 
 @end
 
@@ -78,35 +81,64 @@ static OFCharacterSet *ReservedSet;
 
 + (NSData *)rtfDataForAttributedString:(NSAttributedString *)attributedString;
 {
-    NSData *rtfData = nil;
+    CFDataRef rtfData = NULL;
+    
     OMNI_POOL_START {
         OUIRTFWriter *rtfWriter = [[self alloc] init];
         rtfWriter.attributedString = attributedString;
-        rtfData = [[rtfWriter _rtfData] retain];
+        
+        OFDataBuffer dataBuffer;
+        OFDataBufferInit(&dataBuffer);
+        
+        [rtfWriter _writeRTFData:&dataBuffer];
+        OFDataBufferRelease(&dataBuffer, kCFAllocatorDefault, &rtfData);
+
         [rtfWriter release];
     } OMNI_POOL_END;
-    return [rtfData autorelease];
+    
+    return [NSMakeCollectable(rtfData) autorelease];
 }
 
 - (id)init;
 {
+    if (!(self = [super init]))
+        return nil;
+
     _state.fontSize = -1;
     _state.fontIndex = -1;
-    _state.colorIndex = -1;
-    _dataBuffer = malloc(sizeof(OFDataBuffer));
-    OFDataBufferInit(_dataBuffer);
+    _state.foregroundColorIndex = -1;
+    _state.backgroundColorIndex = 0;
+    _state.underline = kCTUnderlineStyleNone;
     return self;
 }
 
 - (void)dealloc;
 {
+    OBPRECONDITION(_dataBuffer == NULL); // Only set for the duration of -_writeRTFData:
+    
     [_attributedString release];
     [_registeredColors release];
     [_registeredFonts release];
-    OFDataBufferRelease(_dataBuffer); free(_dataBuffer); _dataBuffer = NULL;
 
     [super dealloc];
 }
+
+static const struct {
+    const char *name;
+    unsigned int ctValue;
+} underlineStyleKeywords[] = {
+    { "uld", kCTUnderlineStyleSingle|kCTUnderlinePatternDot },
+    { "uldash", kCTUnderlineStyleSingle|kCTUnderlinePatternDash },
+    { "uldashd", kCTUnderlineStyleSingle|kCTUnderlinePatternDashDot },
+    { "uldashdd", kCTUnderlineStyleSingle|kCTUnderlinePatternDashDotDot },
+    { "uldb", kCTUnderlineStyleDouble },
+    { "ulth", kCTUnderlineStyleThick },
+    { "ulthd", kCTUnderlineStyleThick|kCTUnderlinePatternDot },
+    { "ulthdash", kCTUnderlineStyleThick|kCTUnderlinePatternDash },
+    { "ulthdashd", kCTUnderlineStyleThick|kCTUnderlinePatternDashDot },
+    { "ulthdashdd", kCTUnderlineStyleThick|kCTUnderlinePatternDashDotDot },
+    { NULL, 0 },
+};
 
 - (void)_writeFontAttributes:(NSDictionary *)newAttributes;
 {
@@ -123,7 +155,8 @@ static OFCharacterSet *ReservedSet;
     BOOL newFontBold = [newFontDescriptor bold];
     BOOL newFontItalic = [newFontDescriptor italic];
     [newFontDescriptor release];
-
+    unsigned int newUnderline = [newAttributes unsignedIntForKey:(NSString *)kCTUnderlineStyleAttributeName defaultValue:kCTUnderlineStyleNone];
+    
     BOOL shouldWriteNewFontSize;
     BOOL shouldWriteNewFontIndex;
     BOOL shouldWriteNewFontBold;
@@ -173,6 +206,29 @@ static OFCharacterSet *ReservedSet;
         needTerminatingSpace = YES;
         _state.flags.italic = newFontItalic;
     }
+    
+    if (newUnderline != _state.underline) {
+        if ((newUnderline & 0xFF) == kCTUnderlineStyleNone) {
+            // Special case
+            OFDataBufferAppendCString(_dataBuffer, "\\ul0");
+        } else {
+            int styleIndex;
+            for(styleIndex = 0; underlineStyleKeywords[styleIndex].name != NULL; styleIndex ++) {
+                if (underlineStyleKeywords[styleIndex].ctValue == newUnderline)
+                    break;
+            }
+            if (underlineStyleKeywords[styleIndex].name == NULL) {
+                // Fallback to plain ol' underline
+                OFDataBufferAppendCString(_dataBuffer, "\\ul");
+            } else {
+                OFDataBufferAppendByte(_dataBuffer, '\\');
+                OFDataBufferAppendCString(_dataBuffer, underlineStyleKeywords[styleIndex].name);
+            }
+        }
+        
+        needTerminatingSpace = YES;
+        _state.underline = newUnderline;
+    }    
 
     if (needTerminatingSpace)
         OFDataBufferAppendByte(_dataBuffer, ' ');
@@ -186,14 +242,27 @@ static OFCharacterSet *ReservedSet;
     [colorTableEntry release];
     OBASSERT(newColorIndexValue != nil);
     int newColorIndex = [newColorIndexValue intValue];
-
-    if (newColorIndex == _state.colorIndex)
-        return;
-
-    OFDataBufferAppendCString(_dataBuffer, "\\cf");
-    OFDataBufferAppendInteger(_dataBuffer, newColorIndex);
-    OFDataBufferAppendByte(_dataBuffer, ' ');
-    _state.colorIndex = newColorIndex;
+    
+    if (newColorIndex != _state.foregroundColorIndex) {
+        OFDataBufferAppendCString(_dataBuffer, "\\cf");
+        OFDataBufferAppendInteger(_dataBuffer, newColorIndex);
+        OFDataBufferAppendByte(_dataBuffer, ' ');
+        _state.foregroundColorIndex = newColorIndex;
+    }
+    
+    newColor = [newAttributes objectForKey:OABackgroundColorAttributeName];
+    colorTableEntry = [[OUIRTFColorTableEntry alloc] initWithColor:newColor];
+    newColorIndexValue = [_registeredColors objectForKey:colorTableEntry];
+    [colorTableEntry release];
+    OBASSERT(newColorIndexValue != nil);
+    newColorIndex = [newColorIndexValue intValue];
+    
+    if (newColorIndex != _state.backgroundColorIndex) {
+        OFDataBufferAppendCString(_dataBuffer, "\\cb");
+        OFDataBufferAppendInteger(_dataBuffer, newColorIndex);
+        OFDataBufferAppendByte(_dataBuffer, ' ');
+        _state.backgroundColorIndex = newColorIndex;
+    }
 }
 
 - (void)_writeParagraphAttributes:(NSDictionary *)newAttributes;
@@ -274,10 +343,12 @@ static OFCharacterSet *ReservedSet;
     [defaultColorEntry writeToDataBuffer:_dataBuffer];
     [defaultColorEntry release];
 
-    NSRange effectiveRange;
     NSUInteger stringLength = [_attributedString length];
-    for (NSUInteger textIndex = 0; textIndex < stringLength; textIndex = NSMaxRange(effectiveRange)) {
-        id color = [_attributedString attribute:(NSString *)kCTForegroundColorAttributeName atIndex:textIndex effectiveRange:&effectiveRange];
+    NSSet *textColors = [_attributedString valuesOfAttribute:(NSString *)kCTForegroundColorAttributeName inRange:(NSRange){0, stringLength}];
+    textColors = [textColors setByAddingObjectsFromSet:[_attributedString valuesOfAttribute:OABackgroundColorAttributeName inRange:(NSRange){0, stringLength}]];
+    for (id color in textColors) {
+        if (!color || [color isNull])
+            continue;
 #ifdef DEBUG_RTF_WRITER
         NSLog(@"Registering color: %@", [OUIRTFWriter debugStringForColor:color]);
 #endif
@@ -359,8 +430,11 @@ static inline void writeString(OFDataBuffer *dataBuffer, NSString *string)
     OFDataBufferAppendCString(_dataBuffer, "}\n");
 }
 
-- (NSData *)_rtfData;
+- (void)_writeRTFData:(OFDataBuffer *)dataBuffer;
 {
+    OBPRECONDITION(_dataBuffer == NULL);
+    
+    _dataBuffer = dataBuffer;
     OFDataBufferAppendCString(_dataBuffer, "{\\rtf1\\ansi\n");
 
     [self _writeFontTable];
@@ -390,9 +464,7 @@ static inline void writeString(OFDataBuffer *dataBuffer, NSString *string)
     [scanner release];
 
     OFDataBufferAppendCString(_dataBuffer, "}");
-    NSData *data = [OFDataBufferData(_dataBuffer) retain];
-    OFDataBufferRelease(_dataBuffer);
-    return [data autorelease];
+    _dataBuffer = NULL;
 }
 
 @end
@@ -401,9 +473,14 @@ static inline void writeString(OFDataBuffer *dataBuffer, NSString *string)
 
 - (id)initWithColor:(id)color;
 {
+    if (!(self = [super init]))
+        return nil;
+
     if (color == nil)
         return self;
-
+    
+    OBASSERT(CFGetTypeID(color) == CGColorGetTypeID());
+    
     CGColorRef cgColor = (CGColorRef)color;
     CGColorSpaceRef colorSpace = CGColorGetColorSpace(cgColor);
     const CGFloat *components = CGColorGetComponents(cgColor);

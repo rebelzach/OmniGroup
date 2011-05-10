@@ -1,4 +1,4 @@
-// Copyright 2010 The Omni Group.  All rights reserved.
+// Copyright 2010-2011 The Omni Group. All rights reserved.
 //
 // This software may only be used and reproduced according to the
 // terms in the file OmniSourceLicense.html, which should be
@@ -21,6 +21,8 @@ typedef enum {
 {
 @private
     NSMutableArray *_segments;
+    BOOL _allowsMulitpleSelection;
+    BOOL _allowsEmptySelection;
     BOOL _sizesSegmentsToFit;
 }
 
@@ -30,6 +32,9 @@ typedef enum {
 - (OUIInspectorSegmentedControlButton *)addSegmentWithText:(NSString *)text;
 
 @property(assign,nonatomic) BOOL sizesSegmentsToFit;
+
+@property(assign,nonatomic) BOOL allowsMulitpleSelection;
+@property(assign,nonatomic) BOOL allowsEmptySelection;
 
 @property(assign,nonatomic) OUIInspectorSegmentedControlButton *selectedSegment;
 @property(readonly,nonatomic) OUIInspectorSegmentedControlButton *firstSegment;

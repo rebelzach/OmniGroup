@@ -74,6 +74,20 @@ static inline BOOL OFExtentContainsValue(OFExtent extent, CGFloat value)
     return (OFExtentMin(extent) <= value) && (value <= OFExtentMax(extent));
 }
 
+static inline BOOL OFExtentContainsExtent(OFExtent extent, OFExtent query)
+{
+    return OFExtentContainsValue(extent, OFExtentMin(query)) && OFExtentContainsValue(extent, OFExtentMax(query));
+}
+
+static inline CGFloat OFExtentClampValue(OFExtent extent, CGFloat value)
+{
+    if (value <= OFExtentMin(extent))
+        return OFExtentMin(extent);
+    if (value >= OFExtentMax(extent))
+        return OFExtentMax(extent);
+    return value;
+}
+
 // If you pass in two negative extents; this will return a positive one right now (i.e., location on the left)
 static inline OFExtent OFExtentUnion(OFExtent a, OFExtent b)
 {

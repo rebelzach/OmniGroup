@@ -1,4 +1,4 @@
-// Copyright 2010 The Omni Group.  All rights reserved.
+// Copyright 2010-2011 The Omni Group.  All rights reserved.
 //
 // This software may only be used and reproduced according to the
 // terms in the file OmniSourceLicense.html, which should be
@@ -6,6 +6,7 @@
 // <http://www.omnigroup.com/developer/sourcecode/sourcelicense/>.
 
 #import "OUEFTextPosition.h"
+
 #import <OmniBase/rcsid.h>
 
 RCS_ID("$Id$");
@@ -14,7 +15,9 @@ RCS_ID("$Id$");
 
 - initWithIndex:(NSUInteger)ix
 {
-    [super init];
+    if (!(self = [super init]))
+        return nil;
+    
     index = ix;
     return self;
 }

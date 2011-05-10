@@ -35,7 +35,11 @@
 
 - (void)invalidate;
 
-@property(readonly) NSURL *url;
+@property(retain) NSURL *url;  // set only by OUIDocumentPicker during renaming
+@property(readonly) NSData *emailData; // packages cannot currently be emailed, so this allows subclasses to return a different content for email
+
+@property(readonly) id <OUIDocumentPreview> preview;
+
 @property(retain,nonatomic) id target;
 @property(assign,nonatomic) SEL action;
 
@@ -43,11 +47,15 @@
 @property(readonly) CGRect previousFrame;
 
 @property(copy) NSDate *date;
+
 @property(retain,nonatomic) OUIDocumentProxyView *view;
 
 - (NSString *)name;
+- (NSString *)dateString;
 - (void)refreshDateAndPreview;
-- (CGSize)previewSizeForTargetSize:(CGSize)targetSize;
+
+- (CGSize)previewSizeForTargetSize:(CGSize)targetSize aspectRatio:(CGFloat)aspectRatio;
+- (CGSize)previewSizeForTargetSize:(CGSize)targetSize; // Looks up the aspect ratio in a cache, or uses a canned guess until the preview really loads
 
 @property(readonly) BOOL hasPDFPreview;
 @property(readonly) BOOL isLoadingPreview;
@@ -59,8 +67,14 @@
 
 // Either input can be NULL if the caller doesn't care about that value. But, sometimes we want both and it is more efficient to get both at once.
 + (BOOL)getPDFPreviewData:(NSData **)outPDFData modificationDate:(NSDate **)outModificationDate fromURL:(NSURL *)url error:(NSError **)outError;
++ (id <OUIDocumentPreview>)makePreviewFromURL:(NSURL *)url size:(CGSize)size error:(NSError **)outError;
+
+- (UIImage *)cameraRollImage;
 
 @end
 
 extern NSString * const OUIDocumentProxyPreviewDidLoadNotification;
-extern void OUIDocumentProxySplitNameAndCounter(NSString *originalName, NSString **outName, NSUInteger *outCounter);
+
+@interface NSString (OUIDocumentProxyNameComparison)
+- (NSComparisonResult)proxyNameComparison:(NSString *)otherName;
+@end

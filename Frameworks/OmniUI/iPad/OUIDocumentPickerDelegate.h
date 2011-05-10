@@ -14,10 +14,11 @@
 @protocol OUIDocumentPickerDelegate <NSObject>
 - (Class)documentPicker:(OUIDocumentPicker *)picker proxyClassForURL:(NSURL *)proxyURL;
 - (NSString *)documentPickerBaseNameForNewFiles:(OUIDocumentPicker *)picker;
-- (NSString *)documentPickerDocumentTypeForNewFiles:(OUIDocumentPicker *)picker;
-- (id <OUIDocument>)createNewDocumentAtURL:(NSURL *)url error:(NSError **)outError;
+- (BOOL)createNewDocumentAtURL:(NSURL *)url error:(NSError **)outError;
 
 @optional
+
+- (NSString *)documentPickerDocumentTypeForNewFiles:(OUIDocumentPicker *)picker;
 
 - (void)documentPicker:(OUIDocumentPicker *)picker scannedProxies:(NSSet *)proxies;
 
@@ -28,5 +29,15 @@
 
 // For the export button. If implemented, a 'Send to Camera Roll' item will be in the menu. Can return nil to have a default implementation of using the document's preview, scaled to fit the current device orientation.
 - (UIImage *)documentPicker:(OUIDocumentPicker *)picker cameraRollImageForProxy:(OUIDocumentProxy *)proxy;
+
+// On the iPad, it won't let you show the print panel form a sheet, so we go from the action sheet to another popover
+- (void)documentPicker:(OUIDocumentPicker *)picker printProxy:(OUIDocumentProxy *)proxy fromButton:(UIButton *)aButton;
+
+// Title of the print button in the action menu
+- (NSString *)documentPicker:(OUIDocumentPicker *)picker printButtonTitleForProxy:(OUIDocumentProxy *)proxy;
+
+- (UIImage *)documentPicker:(OUIDocumentPicker *)picker iconForUTI:(CFStringRef)fileUTI;        // used by the export file browser
+- (UIImage *)documentPicker:(OUIDocumentPicker *)picker exportIconForUTI:(CFStringRef)fileUTI;  // used by the large export options buttons
+- (NSString *)documentPicker:(OUIDocumentPicker *)picker labelForUTI:(CFStringRef)fileUTI;
 
 @end

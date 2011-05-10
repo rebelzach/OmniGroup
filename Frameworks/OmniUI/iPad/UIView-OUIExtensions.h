@@ -1,4 +1,4 @@
-// Copyright 2010 The Omni Group.  All rights reserved.
+// Copyright 2010-2011 The Omni Group.  All rights reserved.
 //
 // This software may only be used and reproduced according to the
 // terms in the file OmniSourceLicense.html, which should be
@@ -7,10 +7,20 @@
 //
 // $Id$
 
+#import <UIKit/UIView.h>
+#import <UIKit/UIGeometry.h>
+
 @class UIView, UIImage;
 
 @interface UIView (OUIExtensions)
 - (UIImage *)snapshotImage;
+- (id)containingViewOfClass:(Class)cls; // can return self
+
+// Defaults to zeros, but subclasses can return spacing offsets for where their border appears to be relative to where their actual view edge is.
+// Used by the inspector system to help build seemingly contsistent spacing between controls.
+extern const UIEdgeInsets OUINoBorderEdgeInsets;
+@property(readonly,nonatomic) UIEdgeInsets borderEdgeInsets;
+
 @end
 
 #ifdef DEBUG // Uses private API
@@ -30,6 +40,16 @@ extern void OUIViewLayoutShadowEdges(UIView *self, NSArray *shadowEdges, BOOL fl
 
 #define OUIEndWithoutAnimating \
     } \
+    OBASSERT(![UIView areAnimationsEnabled]); /* Make sure something hasn't turned it on again, like -[UIToolbar setItem:] (Radar 8496247) */ \
     if (_wasAnimating) \
         [UIView setAnimationsEnabled:YES]; \
 } while (0)
+
+#ifdef NS_BLOCKS_AVAILABLE
+extern void OUIWithoutAnimating(void (^actions)(void));
+
+// Need a better name for this. This checks if +[UIView areAnimationsEnabled]. If not, then it performs the block inside a CATransation that disables implicit animations.
+// Useful for when a setter on your UI view adjusts animatable properties on its layer.
+extern void OUIWithAppropriateLayerAnimations(void (^actions)(void));
+
+#endif

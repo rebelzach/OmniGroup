@@ -1,4 +1,4 @@
-// Copyright 2008-2010 Omni Development, Inc.  All rights reserved.
+// Copyright 2008-2011 Omni Development, Inc.  All rights reserved.
 //
 // This software may only be used and reproduced according to the
 // terms in the file OmniSourceLicense.html, which should be
@@ -32,7 +32,7 @@
 - (void)recursivelyRemoveAllAnimations;
 
 - (BOOL)isModelLayer;
-- (BOOL)isPresentationLayer;
+- (BOOL)isPresentationLayer OB_DEPRECATED_ATTRIBUTE;
 
 #if !defined(TARGET_OS_IPHONE) || !TARGET_OS_IPHONE
 - (void)renderInContextIgnoringCache:(CGContextRef)ctx;
@@ -41,9 +41,17 @@
 - (void)writeImagesAndOpen;
 #endif
 
+- (BOOL)drawInVectorContext:(CGContextRef)ctx; // return YES from your subclass's override of this method.
+
 @end
 
 #import <QuartzCore/CAMediaTimingFunction.h>
 @interface CAMediaTimingFunction (OQExtensions)
 + (id)functionCompatibleWithDefault;
+@end
+
+@interface NSObject (CALayerOQDelegate)
+
+- (void)drawLayer:(CALayer *)layer inVectorContext:(CGContextRef)ctx;
+
 @end

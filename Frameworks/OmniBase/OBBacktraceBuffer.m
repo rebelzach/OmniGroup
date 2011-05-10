@@ -7,35 +7,29 @@
 
 #import <OmniBase/OBUtilities.h>
 #import <OmniBase/rcsid.h>
+#import <OmniBase/macros.h>
 #import "OBBacktraceBuffer.h"
 #include <execinfo.h>  // For backtrace()
+#include <sys/time.h>
 
 RCS_ID("$Id$")
 
-// Radar 6964106: clang doesn't have __sync_synchronize builtin (but it claims to be GCC)
-#if !defined(__clang__) && defined(__GNUC__) && ((__GNUC__ * 100 + __GNUC_MINOR__ ) >= 401)
-    #define BUILTIN_ATOMICS  /* GCC 4.1.x has some builtins for atomic operations */
-#endif
-
-#if defined(TARGET_OS_IPHONE) && TARGET_OS_IPHONE
-    #undef BUILTIN_ATOMICS // not available on iPhone, though.
-#endif
-
-#if !defined(BUILTIN_ATOMICS)
+#if !defined(OB_BUILTIN_ATOMICS_AVAILABLE)
     #import <libkern/OSAtomic.h>
 #endif
 
 static struct OBBacktraceBuffer backtraces[OBBacktraceBufferTraceCount];
-static int next_available_backtrace;
+static volatile int32_t next_available_backtrace;
 static struct OBBacktraceBuffer *OBAcquireBacktraceBuffer();
 
+/* this is non-static so that CrashCatcher can find it even in a stripped build */
 const struct OBBacktraceBufferInfo OBBacktraceBufferInfo = {
     OBBacktraceBufferInfoVersionMagic, sizeof(struct OBBacktraceBufferInfo),
     OBBacktraceBufferAddressCount, OBBacktraceBufferTraceCount,
-    (uintptr_t)backtraces, (uintptr_t)&next_available_backtrace
+    backtraces, &next_available_backtrace
 };
 
-void OBRecordBacktrace(uintptr_t ctxt, int optype)
+void OBRecordBacktrace(const char *ctxt, unsigned int optype)
 {
     assert(optype != OBBacktraceBuffer_Unused && optype != OBBacktraceBuffer_Allocated); // 0 and 1 reserved for us
     
@@ -48,8 +42,17 @@ void OBRecordBacktrace(uintptr_t ctxt, int optype)
             buf->frames[got ++] = 0;
     }
     
+    struct timeval timestamp;
+    if (gettimeofday(&timestamp, NULL) == 0) {
+        buf->tv_sec = timestamp.tv_sec;
+        buf->tv_usec = timestamp.tv_usec;
+    } else {
+        buf->tv_sec = 0;
+        buf->tv_usec = 0;
+    }
+    
     // Memory barrier. We want everything we just did to be committed before we update 'type'.
-#ifdef BUILTIN_ATOMICS
+#ifdef OB_BUILTIN_ATOMICS_AVAILABLE
     __sync_synchronize();
 #else
     OSMemoryBarrier();
@@ -60,30 +63,22 @@ void OBRecordBacktrace(uintptr_t ctxt, int optype)
 
 static struct OBBacktraceBuffer *OBAcquireBacktraceBuffer()
 {
-    int slot = next_available_backtrace;
+    int32_t slot;
     
     for(;;) {
-        int next_slot = ( slot >= ( OBBacktraceBufferTraceCount-1 ) ) ? 0 : slot+1;
-        int was_slot;
-#ifdef BUILTIN_ATOMICS
-        was_slot = __sync_val_compare_and_swap(&next_available_backtrace, slot, next_slot);
+        slot = next_available_backtrace;
+        int32_t next_slot = ( slot >= ( OBBacktraceBufferTraceCount-1 ) ) ? 0 : slot+1;
+#ifdef OB_BUILTIN_ATOMICS_AVAILABLE
+        bool did_swap = __sync_bool_compare_and_swap(&next_available_backtrace, slot, next_slot);
 #else
-        was_slot = OSAtomicCompareAndSwapInt(slot, next_slot, &next_available_backtrace);
+        bool did_swap = OSAtomicCompareAndSwap32(slot, next_slot, &next_available_backtrace);
 #endif
-        if (__builtin_expect(was_slot == slot, 1))
+        if (__builtin_expect(did_swap, 1))
             break;
-        else
-            slot = was_slot;
     }
     
     struct OBBacktraceBuffer *buf = &(backtraces[slot]);
     buf->type = OBBacktraceBuffer_Allocated;
-    
-#ifdef BUILTIN_ATOMICS
-    __sync_synchronize();
-#else
-    OSMemoryBarrier();
-#endif
     
     return buf;
 }

@@ -1,4 +1,4 @@
-// Copyright 2005, 2010 Omni Development, Inc.  All rights reserved.
+// Copyright 2005, 2010-2011 Omni Development, Inc.  All rights reserved.
 //
 // This software may only be used and reproduced according to the
 // terms in the file OmniSourceLicense.html, which should be
@@ -45,7 +45,7 @@ RCS_ID("$Id$");
 
 - (id)initWithContentsOfURL:(NSURL *)url;
 {
-    if ([super init] == nil)
+    if (!(self = [super init]))
         return nil;
 
     OBASSERT([url isFileURL]);
@@ -80,8 +80,8 @@ RCS_ID("$Id$");
     CFRelease(spec.appURL);
     
     if( err ) {
-        NSString *exceptionReason = NSLocalizedStringFromTableInBundle(@"Couldn't launch Automator Launcher.app.  LSOpenFromURLSpec returned %d", @"OmniAppKit", [OAWorkflow bundle], "workflow execution exception format string");
-        [NSException raise:NSInternalInconsistencyException format:exceptionReason, err];
+        NSString *exceptionReason = NSLocalizedStringFromTableInBundle(@"Couldn't launch Automator Launcher.app.  LSOpenFromURLSpec returned %@", @"OmniAppKit", [OAWorkflow bundle], "workflow execution exception format string");
+        [NSException raise:NSInternalInconsistencyException format:exceptionReason, OFOSStatusDescription(err)];
     }
     
 }

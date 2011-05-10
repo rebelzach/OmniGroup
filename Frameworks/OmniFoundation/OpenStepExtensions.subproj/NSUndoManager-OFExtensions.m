@@ -238,8 +238,7 @@ static OFUndoManagerLoggingState *_log(NSUndoManager *self, BOOL indent, NSStrin
 void _OFUndoManagerPushCallSite(NSUndoManager *undoManager, id self, SEL _cmd)
 {
     if ((OFUndoManagerLoggingOptions != OFUndoManagerNoLogging) && [undoManager isUndoRegistrationEnabled]) {
-        Class cls = [self class];
-        OFUndoManagerLoggingState *state = _log(undoManager, YES, @"<%s:0x%08x> %s {\n", class_getName(cls), self, _cmd);
+        OFUndoManagerLoggingState *state = _log(undoManager, YES, @"%@ %s {\n", [self shortDescription], _cmd);
         state->indentLevel++;
     }
 }
@@ -264,15 +263,14 @@ void _OFUndoManagerPopCallSite(NSUndoManager *undoManager)
 {
     OBASSERT([self isUndoRegistrationEnabled]);
     if ((OFUndoManagerLoggingOptions != OFUndoManagerNoLogging))
-        _log(self, NO, @"REMOVE ALL ACTIONS\n");
+        _log(self, NO, @"REMOVE ALL ACTIONS(%p)\n", self);
     logging_original_removeAllActions(self, _cmd);
 }
 
 - (void)logging_replacement_removeAllActionsWithTarget:(id)target;
 {
     if ((OFUndoManagerLoggingOptions != OFUndoManagerNoLogging)) {
-        Class cls = [target class];
-        _log(self, NO, @"%p REMOVE ACTIONS target=<%s:0x%08x>\n", self, class_getName(cls), target);
+        _log(self, NO, @"REMOVE ACTIONS(%p) target=%@\n", self, [target shortDescription]);
     }
     logging_original_removeAllActionsWithTarget(self, _cmd, target);
 }
@@ -283,8 +281,7 @@ void _OFUndoManagerPopCallSite(NSUndoManager *undoManager)
     logging_original_registerUndoWithTargetSelectorObject(self, _cmd, target, selector, anObject);
 
     if ((OFUndoManagerLoggingOptions != OFUndoManagerNoLogging) && [self isUndoRegistrationEnabled]) {
-        Class cls = [target class];
-        _log(self, YES, @">> target=<%s:0x%08x> selector=%s object=%@\n", class_getName(cls), target, selector, anObject);
+        _log(self, YES, @">> target=%@ selector=%s object=%@\n", [target shortDescription], selector, anObject);
     }
 }
 
@@ -311,8 +308,9 @@ static void logging_replacement_proxyFowardInvocation(id proxy, SEL _cmd, NSInvo
     }
     
     if ((OFUndoManagerLoggingOptions != OFUndoManagerNoLogging) && [self isUndoRegistrationEnabled]) {
-        Class cls = [target class];
-        _log(self, YES, @">> <%s:%p> %s ", class_getName(cls), target, [anInvocation selector]);
+        _log(self, YES, @">>(%p)>> %@ %s ", self, [target shortDescription], [anInvocation selector]);
+        
+        if ((OFUndoManagerLoggingOptions & OFUndoManagerShortLogging) == 0) {
         
         NSMethodSignature *signature = [anInvocation methodSignature];
         NSUInteger argIndex, argCount;
@@ -322,7 +320,12 @@ static void logging_replacement_proxyFowardInvocation(id proxy, SEL _cmd, NSInvo
         for (argIndex = 2; argIndex < argCount; argIndex++) {
             const char *type = [signature getArgumentTypeAtIndex:argIndex];
             _log(self, NO, @" arg%d(%s):", argIndex - 2, type);
-            if (strcmp(type, @encode(id)) == 0) {
+            
+            if (*type == '^') {
+                void *arg = NULL;
+                [anInvocation getArgument:&arg atIndex:argIndex];
+                _log(self, NO, @"ptr %p", arg);
+            } else if (strcmp(type, @encode(id)) == 0) {
                 id arg = nil;
                 [anInvocation getArgument:&arg atIndex:argIndex];
                 _log(self, NO, @"%@", arg? [arg shortDescription] : @"nil");
@@ -338,6 +341,14 @@ static void logging_replacement_proxyFowardInvocation(id proxy, SEL _cmd, NSInvo
                 unsigned int arg = -1;
                 [anInvocation getArgument:&arg atIndex:argIndex];
                 _log(self, NO, @"%u", arg);
+            } else if (strcmp(type, @encode(long)) == 0) {
+                long arg = -1;
+                [anInvocation getArgument:&arg atIndex:argIndex];
+                _log(self, NO, @"%ld", arg);
+            } else if (strcmp(type, @encode(unsigned long)) == 0) {
+                unsigned long arg = -1;
+                [anInvocation getArgument:&arg atIndex:argIndex];
+                _log(self, NO, @"%lu", arg);                
             } else if (strcmp(type, @encode(float)) == 0) {
                 float arg = -1;
                 [anInvocation getArgument:&arg atIndex:argIndex];
@@ -369,6 +380,8 @@ static void logging_replacement_proxyFowardInvocation(id proxy, SEL _cmd, NSInvo
             } else {
                 _log(self, NO, @"UNKNOWN ARG TYPE");
             }
+        }
+            
         }
         _log(self, NO, @"\n");
     }
@@ -412,7 +425,7 @@ static void logging_replacement_proxyFowardInvocation(id proxy, SEL _cmd, NSInvo
 {
     OFUndoManagerLoggingState *state = NULL;
     if ((OFUndoManagerLoggingOptions != OFUndoManagerNoLogging)) {
-        state = _log(self, YES, @"UNDO {\n");
+        state = _log(self, YES, @"UNDO(%p) {\n", self);
         state->indentLevel++;
     }
     
@@ -420,7 +433,7 @@ static void logging_replacement_proxyFowardInvocation(id proxy, SEL _cmd, NSInvo
     
     if (state) {
         state->indentLevel--;
-        _log(self, YES, @"} UNDO\n");
+        _log(self, YES, @"} (%p)UNDO\n", self);
     }
 }
 
@@ -428,7 +441,7 @@ static void logging_replacement_proxyFowardInvocation(id proxy, SEL _cmd, NSInvo
 {
     OFUndoManagerLoggingState *state = NULL;
     if ((OFUndoManagerLoggingOptions != OFUndoManagerNoLogging)) {
-        state = _log(self, YES, @"REDO {\n");
+        state = _log(self, YES, @"REDO(%p) {\n", self);
         state->indentLevel++;
     }
     
@@ -436,14 +449,14 @@ static void logging_replacement_proxyFowardInvocation(id proxy, SEL _cmd, NSInvo
     
     if (state) {
         state->indentLevel--;
-        _log(self, YES, @"} REDO\n");
+        _log(self, YES, @"} (%p)REDO\n", self);
     }
 }
 
 - (void)logging_replacement_beginUndoGrouping;
 {
     if ((OFUndoManagerLoggingOptions != OFUndoManagerNoLogging)) {
-        OFUndoManagerLoggingState *state = _log(self, YES, @"BEGIN GROUPING(%08x) {\n", self);
+        OFUndoManagerLoggingState *state = _log(self, YES, @"BEGIN %@ GROUPING(%p) {\n", [self isUndoing] ? @"REDO" : @"UNDO", self);
         state->indentLevel++;
     }
     
@@ -456,7 +469,7 @@ static void logging_replacement_proxyFowardInvocation(id proxy, SEL _cmd, NSInvo
     if ((OFUndoManagerLoggingOptions != OFUndoManagerNoLogging)) {
         OFUndoManagerLoggingState *state = _OFUndoManagerLoggingStateGet(self);
         state->indentLevel--;
-        _log(self, YES, @"} (%08x)END GROUPING\n", self);
+        _log(self, YES, @"} (%p)END %@ GROUPING\n", self, [self isUndoing] ? @"REDO" : @"UNDO");
     }
 }
 
@@ -466,7 +479,7 @@ static void logging_replacement_proxyFowardInvocation(id proxy, SEL _cmd, NSInvo
     if ((OFUndoManagerLoggingOptions != OFUndoManagerNoLogging)) {
         OFUndoManagerLoggingState *state = _OFUndoManagerLoggingStateGet(self);
         state->indentLevel++;
-        _log(self, YES, @"BEGIN DISABLE UNDO REGISTRATION(%08x) {\n", self);
+        _log(self, YES, @"BEGIN DISABLE UNDO REGISTRATION(%p) {\n", self);
     }
 }
 
@@ -475,7 +488,7 @@ static void logging_replacement_proxyFowardInvocation(id proxy, SEL _cmd, NSInvo
     logging_original_enableUndoRegistration(self, _cmd);
     if ((OFUndoManagerLoggingOptions != OFUndoManagerNoLogging)) {
         OFUndoManagerLoggingState *state = _OFUndoManagerLoggingStateGet(self);
-        _log(self, YES, @"} (%08x)END DISABLE UNDO REGISTRATION{\n", self);
+        _log(self, YES, @"} (%p)END DISABLE UNDO REGISTRATION\n", self);
         state->indentLevel--;
     }
 }

@@ -1,4 +1,4 @@
-// Copyright 2010 The Omni Group.  All rights reserved.
+// Copyright 2010-2011 The Omni Group.  All rights reserved.
 //
 // This software may only be used and reproduced according to the
 // terms in the file OmniSourceLicense.html, which should be
@@ -10,9 +10,14 @@
 #import <OmniFoundation/OFObject.h>
 #import <MessageUI/MFMailComposeViewController.h>
 #import <OmniUI/OUIDocumentPickerDelegate.h>
+#import <OmniUI/OUIFeatures.h>
 
 @class UIBarButtonItem;
-@class OUIAppMenuController, OUIDocumentPicker;
+@class OUIAppMenuController, OUIDocumentPicker, OUISyncMenuController;
+
+#if OUI_SOFTWARE_UPDATE_CHECK
+@class OUISoftwareUpdateController;
+#endif
 
 #define OUI_PRESENT_ERROR(error) [[[OUIAppController controller] class] presentError:(error) file:__FILE__ line:__LINE__]
 
@@ -22,19 +27,32 @@
     OUIDocumentPicker *_documentPicker;
     UIBarButtonItem *_appMenuBarItem;
     OUIAppMenuController *_appMenuController;
+    OUISyncMenuController *_syncMenuController;
     
     UIActivityIndicatorView *_activityIndicator;
     UIView *_eventBlockingView;
+    
+#if OUI_SOFTWARE_UPDATE_CHECK
+    OUISoftwareUpdateController *_softwareUpdateController;
+#endif
+    
+    NSDictionary *_roleByFileType;
+    NSArray *_editableFileTypes;
+    
+    UIPopoverController *_possiblyVisiblePopoverController;
 }
 
 + (id)controller;
+
 + (BOOL)canHandleURLScheme:(NSString *)urlScheme;
+
+- (NSArray *)editableFileTypes;
+- (BOOL)canViewFileTypeWithIdentifier:(NSString *)uti;
 
 + (void)presentError:(NSError *)error;
 + (void)presentError:(NSError *)error file:(const char *)file line:(int)line;
 
 @property(readonly) UIBarButtonItem *appMenuBarItem;
-- (void)dismissAppMenu;
 
 @property(nonatomic,retain) IBOutlet OUIDocumentPicker *documentPicker;
 
@@ -46,6 +64,13 @@
 - (NSString *)feedbackMenuTitle;
 - (void)sendFeedback:(id)sender;
 - (void)showAppMenu:(id)sender;
+- (void)showSyncMenu:(id)sender;
+
+// Popover Helpers
+// Present all popovers via this API to help avoid popovers having to know about one another to avoid multiple popovers on screen.
+- (BOOL)presentPopover:(UIPopoverController *)popover fromRect:(CGRect)rect inView:(UIView *)view permittedArrowDirections:(UIPopoverArrowDirection)arrowDirections animated:(BOOL)animated;
+- (BOOL)presentPopover:(UIPopoverController *)popover fromBarButtonItem:(UIBarButtonItem *)item permittedArrowDirections:(UIPopoverArrowDirection)arrowDirections animated:(BOOL)animated;
+- (void)dismissPopoverAnimated:(BOOL)animated; // DOES send the 'did' delegate method, unlike the plain UIPopoverController method (see the implementation for reasoning)
 
 // Special URL handling
 - (BOOL)isSpecialURL:(NSURL *)url;
@@ -61,5 +86,6 @@
 @end
 
 extern BOOL OUIShouldLogPerformanceMetrics;
+extern NSTimeInterval OUIElapsedTimeSinceProcessCreation(void); // For timing startup work before main() is entered
 
 #define OUILogPerformanceMetric(format, ...) if (OUIShouldLogPerformanceMetrics) NSLog((format), ## __VA_ARGS__)

@@ -1,4 +1,4 @@
-// Copyright 2003-2008, 2010 Omni Development, Inc.  All rights reserved.
+// Copyright 2003-2008, 2010-2011 Omni Development, Inc.  All rights reserved.
 //
 // This software may only be used and reproduced according to the
 // terms in the file OmniSourceLicense.html, which should be
@@ -11,6 +11,8 @@
 
 #import <CoreFoundation/CFString.h>
 #import <OmniFoundation/OFXMLWhitespaceBehavior.h>
+#import <OmniFoundation/OFXMLBuffer.h>
+#import <OmniBase/objc.h>
 
 @class NSMutableString, NSError;
 @class OFXMLElement, OFXMLDocument;
@@ -33,7 +35,7 @@
 - (NSString *)newQuotedStringForDocument:(OFXMLDocument *)doc;
 
 // Writing support called from OFXMLDocument
-- (BOOL)appendXML:(struct _OFXMLBuffer *)xml withParentWhiteSpaceBehavior:(OFXMLWhitespaceBehaviorType)parentBehavior document:(OFXMLDocument *)doc level:(unsigned int)level error:(NSError **)outError;
+- (BOOL)appendXML:(OFXMLBuffer)xml withParentWhiteSpaceBehavior:(OFXMLWhitespaceBehaviorType)parentBehavior document:(OFXMLDocument *)doc level:(unsigned int)level error:(NSError **)outError;
 
 @end
 
@@ -63,9 +65,9 @@
 #define OFXMLHTMLEntityMask (OFXMLGtEntityMask|OFXMLQuotEntityMask|(OFXMLCharacterFlagWriteCharacterEntity << OFXMLAposCharacterOptionsShift))
 #define OFXMLHTMLWithNewlinesEntityMask (OFXMLHTMLEntityMask|OFXMLNewlineEntityMask)
 
-extern NSString *OFXMLCreateStringInCFEncoding(NSString *sourceString, CFStringEncoding anEncoding);
-extern NSString *OFXMLCreateStringWithEntityReferencesInCFEncoding(NSString *sourceString, unsigned int entityMask, NSString *optionalNewlineString, CFStringEncoding anEncoding);
-extern NSString *OFXMLCreateParsedEntityString(NSString *sourceString);
+extern NSString *OFXMLCreateStringInCFEncoding(NSString *sourceString, CFStringEncoding anEncoding) NS_RETURNS_RETAINED;
+extern NSString *OFXMLCreateStringWithEntityReferencesInCFEncoding(NSString *sourceString, unsigned int entityMask, NSString *optionalNewlineString, CFStringEncoding anEncoding) NS_RETURNS_RETAINED;
+extern NSString *OFXMLCreateParsedEntityString(NSString *sourceString) NS_RETURNS_RETAINED;
 extern NSString *OFStringForEntityName(NSString *entityName);
 
 //extern NSString *OFCharacterDataFromXMLTree(CFXMLTreeRef aTree);

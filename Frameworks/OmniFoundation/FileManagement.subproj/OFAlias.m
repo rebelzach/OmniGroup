@@ -1,4 +1,4 @@
-// Copyright 2004-2005, 2007-2008, 2010 Omni Development, Inc.  All rights reserved.
+// Copyright 2004-2005, 2007-2008, 2010-2011 Omni Development, Inc.  All rights reserved.
 //
 // This software may only be used and reproduced according to the
 // terms in the file OmniSourceLicense.html, which should be
@@ -9,6 +9,8 @@
 
 RCS_ID("$Id$");
 
+// TODO: Switch to +[NSURL bookmarkDataWithOptions:includingResourceValuesForKeys:relativeToURL:error:]?
+
 // We may want to store the path verbatim as well as the alias.
 
 @implementation OFAlias
@@ -17,7 +19,7 @@ RCS_ID("$Id$");
 
 - initWithPath:(NSString *)path;
 {
-    if ([super init] == nil)
+    if (!(self = [super init]))
         return nil;
 
     CFURLRef urlRef = CFURLCreateWithFileSystemPath(kCFAllocatorDefault, (CFStringRef)path, kCFURLPOSIXPathStyle, false);

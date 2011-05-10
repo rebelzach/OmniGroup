@@ -16,6 +16,8 @@ RCS_ID("$Id$");
 static id _commonInit(OUIScalingScrollView *self)
 {
     self->_allowedEffectiveScaleExtent = OFExtentMake(1, 8);
+    self->_centerContent = YES;
+    
     return self;
 }
 
@@ -36,8 +38,6 @@ static id _commonInit(OUIScalingScrollView *self)
 // Caller should call -sizeInitialViewSizeFromCanvasSize on us after setting this.
 @synthesize allowedEffectiveScaleExtent = _allowedEffectiveScaleExtent;
 
-@synthesize lastScaleWasFullScale = _lastScaleWasFullScale;
-
 static OUIScalingView *_scalingView(OUIScalingScrollView *self)
 {
     OUIScalingView *view = (OUIScalingView *)[self.delegate viewForZoomingInScrollView:self];
@@ -46,15 +46,14 @@ static OUIScalingView *_scalingView(OUIScalingScrollView *self)
     return view;
 }
 
-- (void)adjustScaleBy:(CGFloat)scale canvasSize:(CGSize)canvasSize;
+- (CGFloat)fullScreenScaleForCanvasSize:(CGSize)canvasSize;
 {
-    OUIScalingView *view = _scalingView(self);
-    if (!view)
-        return;
+    CGRect scrollBounds = self.bounds;
+    CGFloat fitXScale = CGRectGetWidth(scrollBounds) / canvasSize.width;
+    CGFloat fitYScale = CGRectGetHeight(scrollBounds) / canvasSize.height;
+    CGFloat fullScreenScale = MIN(fitXScale, fitYScale); // the maximum size that won't make us scrollable.
     
-    // To get unpixelated drawing, when we are scaled up or down, we need to adjust our view to have a 1-1 pixel mapping.  UIScrollView's "scaling" is just scaling our backing store.
-    // If we were at 2x scale and we are 2x more scaled now, then we should be 4x!
-    [self adjustScaleTo:view.scale * scale canvasSize:canvasSize];
+    return fullScreenScale;
 }
 
 - (void)adjustScaleTo:(CGFloat)effectiveScale canvasSize:(CGSize)canvasSize;
@@ -62,19 +61,6 @@ static OUIScalingView *_scalingView(OUIScalingScrollView *self)
     OUIScalingView *view = _scalingView(self);
     if (!view)
         return;
-
-    CGRect scrollBounds = self.bounds;
-    CGFloat fitXScale = CGRectGetWidth(scrollBounds) / canvasSize.width;
-    CGFloat fitYScale = CGRectGetHeight(scrollBounds) / canvasSize.height;
-    CGFloat fullScreenScale = MIN(fitXScale, fitYScale); // the maximum size that won't make us scrollable.
-    
-    // If the caller passes in a non-positive number, or if the effective scale is close to the full screen scale, use it.
-    if (effectiveScale <= 0 || fabs(effectiveScale - fullScreenScale) < OUI_SNAP_TO_ZOOM_FIT_PERCENT) {
-        _lastScaleWasFullScale = YES;
-        effectiveScale = fullScreenScale;
-    } else {
-        _lastScaleWasFullScale = NO;
-    }
     
     view.scale = effectiveScale;
     
@@ -87,15 +73,15 @@ static OUIScalingView *_scalingView(OUIScalingScrollView *self)
     view.bounds = scaledCanvasSize;
     
     // Need to reset the min/max zoom to be factors of our current scale.  The minimum scale allowed needs to be sufficient to fit the whole graph on screen.  Then, allow zooming up to at least 4x that size or 4x the canvas size, whatever is larger.
-    CGFloat minimumZoom = MIN(OFExtentMin(_allowedEffectiveScaleExtent), MIN(fitXScale, fitYScale));
+    CGFloat minimumZoom = MIN(OFExtentMin(_allowedEffectiveScaleExtent), [self fullScreenScaleForCanvasSize:canvasSize]);
     CGFloat maximumZoom = OFExtentMax(_allowedEffectiveScaleExtent);
 
     BOOL isTiled = [view isKindOfClass:[OUITiledScalingView class]];
     if (!isTiled) {
         // If we are one big view, we need to limit our scale based on estimated VM size.
         
-        // Limit the maximum zoom size (for now) based on the pixel count we'll cover.  Assume each pixel in the view backing store is 4 bytes. Limit to 32MB of video memory (other backing stores, animating between two zoom levels will temporarily double this). This does mean that if you have a large canvas, we might not even allow you to reach 100%. Better than crashing.
-        CGFloat maxVideoMemory = 32*1024*1024;
+        // Limit the maximum zoom size (for now) based on the pixel count we'll cover.  Assume each pixel in the view backing store is 4 bytes. Limit to 16MB of video memory (other backing stores, animating between two zoom levels will temporarily double this). This does mean that if you have a large canvas, we might not even allow you to reach 100%. Better than crashing.
+        CGFloat maxVideoMemory = 16*1024*1024;
         CGFloat canvasVideoUsage = 4 * canvasSize.width * canvasSize.height;
         maximumZoom = MIN(maximumZoom, sqrt(maxVideoMemory / canvasVideoUsage));
     }
@@ -112,15 +98,30 @@ static OUIScalingView *_scalingView(OUIScalingScrollView *self)
     
     if (isTiled)
         [(OUITiledScalingView *)view tileVisibleRect];
+    
+    CGSize viewSize = view.frame.size;
+    self.contentSize = CGSizeMake(viewSize.width, viewSize.height);
 
-    [self adjustContentInset];
+    [self adjustContentInsetAnimated:NO];
+    
+    // UIScrollView will show scrollers if we have the same (or maybe it is nearly the same) size but aren't really scrollable.  See <bug://bugs/60077> (weird scroller issues in landscape mode)
+    CGSize scrollSize = self.bounds.size;
+    self.showsHorizontalScrollIndicator = scrollSize.width < viewSize.width;
+    self.showsVerticalScrollIndicator = scrollSize.height < viewSize.height;
+    
+    [view scaleChanged];
 }
 
-- (void)adjustContentInset;
+@synthesize centerContent = _centerContent;
+@synthesize extraEdgeInsets = _extraEdgeInsets;
+
+- (void)adjustContentInsetAnimated:(BOOL)animated;
 {
     OUIScalingView *view = _scalingView(self);
-    if (!view)
+    if (!view || !_centerContent)
         return;
+    
+    //NSLog(@"adjustContentInset");
     
     // If the contained view has a size smaller than the scroll view, it will get pinned to the upper left.
     CGSize viewSize = view.frame.size;
@@ -129,12 +130,24 @@ static OUIScalingView *_scalingView(OUIScalingScrollView *self)
     CGFloat xSpace = MAX(0, scrollSize.width - viewSize.width);
     CGFloat ySpace = MAX(0, scrollSize.height - viewSize.height);
     
-    self.contentInset = UIEdgeInsetsMake(ySpace/2, xSpace/2, ySpace/2, xSpace/2);
-    self.contentSize = CGSizeMake(viewSize.width, viewSize.height);
+    UIEdgeInsets zi = UIEdgeInsetsMake(ySpace/2, xSpace/2, ySpace/2, xSpace/2);
+    UIEdgeInsets ei = self.extraEdgeInsets;
+    UIEdgeInsets totalInsets = UIEdgeInsetsMake(zi.top + ei.top, zi.left + ei.left, zi.bottom + ei.bottom, zi.right + ei.right);
     
-    // UIScrollView will show scrollers if we have the same (or maybe it is nearly the same) size but aren't really scrollable.  See <bug://bugs/60077> (weird scroller issues in landscape mode)
-    self.showsHorizontalScrollIndicator = scrollSize.width < viewSize.width;
-    self.showsVerticalScrollIndicator = scrollSize.height < viewSize.height;
+    
+    if (UIEdgeInsetsEqualToEdgeInsets(self.contentInset, totalInsets))
+        return;
+    
+    if (animated) {
+        [UIView beginAnimations:@"OUIAdjustContentInsetAnimation" context:NULL];
+        [UIView setAnimationDuration:0.4];
+    }
+    
+    self.contentInset = totalInsets;
+    
+    if (animated) {
+        [UIView commitAnimations];
+    }
 }
 
 #pragma mark -
@@ -142,7 +155,7 @@ static OUIScalingView *_scalingView(OUIScalingScrollView *self)
 
 - (void)layoutSubviews;
 {
-    [self adjustContentInset];
+    [self adjustContentInsetAnimated:NO];
 }
 
 @end

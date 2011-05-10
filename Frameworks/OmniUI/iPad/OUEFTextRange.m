@@ -1,4 +1,4 @@
-// Copyright 2010 The Omni Group.  All rights reserved.
+// Copyright 2010-2011 The Omni Group.  All rights reserved.
 //
 // This software may only be used and reproduced according to the
 // terms in the file OmniSourceLicense.html, which should be
@@ -6,8 +6,10 @@
 // <http://www.omnigroup.com/developer/sourcecode/sourcelicense/>.
 
 #import "OUEFTextRange.h"
-#import "OUEFTextPosition.h"
+
 #import <OmniBase/rcsid.h>
+
+#import "OUEFTextPosition.h"
 
 RCS_ID("$Id$");
 
@@ -15,7 +17,8 @@ RCS_ID("$Id$");
 
 - initWithStart:(OUEFTextPosition *)st end:(OUEFTextPosition *)en
 {
-    [super init];
+    if (!(self = [super init]))
+        return nil;
     start = [st retain];
     end = [en retain];
     assert([st isKindOfClass:[OUEFTextPosition class]]);

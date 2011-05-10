@@ -1,4 +1,4 @@
-// Copyright 2010 The Omni Group.  All rights reserved.
+// Copyright 2010-2011 The Omni Group.  All rights reserved.
 //
 // This software may only be used and reproduced according to the
 // terms in the file OmniSourceLicense.html, which should be
@@ -6,6 +6,7 @@
 // <http://www.omnigroup.com/developer/sourcecode/sourcelicense/>.
 
 #import <OmniUI/UIView-OUIExtensions.h>
+#import <OmniUI/OUIDrawing.h>
 #import <OmniUI/OUILoadedImage.h>
 #import <OmniQuartz/OQDrawing.h>
 #import <UIKit/UIView.h>
@@ -14,19 +15,160 @@ RCS_ID("$Id$");
 
 @implementation UIView (OUIExtensions)
 
+#if defined(OMNI_ASSERTIONS_ON)
+
+static CGRect (*_original_convertRectFromView)(UIView *self, SEL _cmd, CGRect rect, UIView *view) = NULL;
+static CGRect (*_original_convertRectToView)(UIView *self, SEL _cmd, CGRect rect, UIView *view) = NULL;
+static CGPoint (*_original_convertPointFromView)(UIView *self, SEL _cmd, CGPoint point, UIView *view) = NULL;
+static CGPoint (*_original_convertPointToView)(UIView *self, SEL _cmd, CGPoint point, UIView *view) = NULL;
+
+// -window on UIWindow returns nil instead of self. Also, though the documentation doesn't allow it, we currently want to allow the case that two views just have a common ancestor and aren't in a window at all (yet).
+static UIView *_rootView(UIView *view)
+{
+    while (YES) {
+        UIView *container = view.superview;
+        if (!container)
+            return view;
+        view = container;
+    }
+}
+
+static UIWindow *_window(UIView *view)
+{
+    // -window on UIWindow returns nil instead of self.
+    if ([view isKindOfClass:[UIWindow class]])
+        return (UIWindow *)view;
+    return view.window;
+}
+
+static BOOL _viewsCompatible(UIView *self, UIView *otherView)
+{
+    // The documentation for this method is much more restrictive about this than what seems to actually happen.
+    // UIKit will attempt to convert points between different UIWindows in context menus, so we'll allow that here.
+
+    
+    if (!otherView) {
+        // "If aView is nil, this method instead converts to/from window base coordinates"
+#ifdef OMNI_ASSERTIONS_ON
+        // Not sure what UIKit does in this case. It might just not do any transform, but until we need it we'll stick to requiring a window.
+        UIView *root = _rootView(self);
+        OBASSERT([root isKindOfClass:[UIWindow class]]);
+#endif
+        return YES;
+    }
+    
+    // "Otherwise, both view and the receiver must belong to the same UIWindow object."
+    // We just require that they have a common ancestor view, though.
+    UIView *root1 = _rootView(self);
+    UIView *root2 = _rootView(otherView);
+    
+    if (root1 == root2)
+        return YES;
+        
+    UIWindow *window1 = _window(self);
+    UIWindow *window2 = _window(otherView);
+    
+    // Might actually be allowed if they are on any screen, but it isn't clear how UIKit would treat those transforms since there is no screen arrangement UI (presumably left-to-right with the top-edge aligned, but who knows).
+    OBASSERT(window1.screen == window2.screen);
+    
+    return YES;
+}
+
+static CGRect _replacement_convertRectFromView(UIView *self, SEL _cmd, CGRect rect, UIView *view)
+{
+    OBPRECONDITION(_viewsCompatible(self, view));
+    return _original_convertRectFromView(self, _cmd, rect, view);
+}
+
+static CGRect _replacement_convertRectToView(UIView *self, SEL _cmd, CGRect rect, UIView *view)
+{
+    OBPRECONDITION(_viewsCompatible(self, view));
+    return _original_convertRectToView(self, _cmd, rect, view);
+}
+
+static CGPoint _replacement_convertPointFromView(UIView *self, SEL _cmd, CGPoint point, UIView *view)
+{
+    OBPRECONDITION(_viewsCompatible(self, view));
+    return _original_convertPointFromView(self, _cmd, point, view);
+}
+
+static CGPoint _replacement_convertPointToView(UIView *self, SEL _cmd, CGPoint point, UIView *view)
+{
+    OBPRECONDITION(_viewsCompatible(self, view));
+    return _original_convertPointToView(self, _cmd, point, view);
+}
+
+static void OUIViewPerformPosing(void) __attribute__((constructor));
+static void OUIViewPerformPosing(void)
+{
+    Class viewClass = NSClassFromString(@"UIView");
+    _original_convertRectFromView = (typeof(_original_convertRectFromView))OBReplaceMethodImplementation(viewClass, @selector(convertRect:fromView:), (IMP)_replacement_convertRectFromView);
+    _original_convertRectToView = (typeof(_original_convertRectToView))OBReplaceMethodImplementation(viewClass, @selector(convertRect:toView:), (IMP)_replacement_convertRectToView);
+    _original_convertPointFromView = (typeof(_original_convertPointFromView))OBReplaceMethodImplementation(viewClass, @selector(convertPoint:fromView:), (IMP)_replacement_convertPointFromView);
+    _original_convertPointToView = (typeof(_original_convertPointToView))OBReplaceMethodImplementation(viewClass, @selector(convertPoint:toView:), (IMP)_replacement_convertPointToView);
+}
+
+#endif
+
 - (UIImage *)snapshotImage;
 {
     UIImage *image;
     CGRect bounds = self.bounds;
     
-    UIGraphicsBeginImageContext(bounds.size);
+    OUIGraphicsBeginImageContext(bounds.size);
     {
         [self drawRect:bounds];
         image = UIGraphicsGetImageFromCurrentImageContext();
     }
-    UIGraphicsEndImageContext();
+    OUIGraphicsEndImageContext();
     
     return image;
+}
+
+- (id)containingViewOfClass:(Class)cls; // can return self
+{
+    UIView *view = self;
+    while (view) {
+        if ([view isKindOfClass:cls])
+            return view;
+        view = view.superview;
+    }
+    return nil;
+}
+
+// Magic constant to say that this view has no border or doesn't want to be in your border finding nonsense.
+// Returning UIEdgeInsetsZero, on the other hand, means that the view has a border and it is right up against the edge of the view's bounds.
+const UIEdgeInsets OUINoBorderEdgeInsets = {CGFLOAT_MAX, CGFLOAT_MAX, CGFLOAT_MAX, CGFLOAT_MAX};
+
+- (UIEdgeInsets)borderEdgeInsets;
+{
+    CGRect unionBorderRect = CGRectNull;
+    
+    // Default to looking through our subviews, finding their effective border rects and unioning that.
+    for (UIView *subview in self.subviews) {
+        UIEdgeInsets subviewInsets = subview.borderEdgeInsets;
+        if (UIEdgeInsetsEqualToEdgeInsets(subviewInsets, OUINoBorderEdgeInsets))
+            continue;
+        
+        CGRect borderRect = [self convertRect:UIEdgeInsetsInsetRect(subview.bounds, subviewInsets) fromView:subview];
+        if (CGRectEqualToRect(unionBorderRect, CGRectNull))
+            unionBorderRect = borderRect;
+        else
+            unionBorderRect = CGRectUnion(unionBorderRect, borderRect);
+    }
+
+    // If no subviews have a border, then this UIView doesn't have one.
+    if (CGRectEqualToRect(unionBorderRect, CGRectNull))
+        return OUINoBorderEdgeInsets;
+    
+    // Now, calculate the effective inset from our bounds
+    CGRect bounds = self.bounds;
+    return (UIEdgeInsets){
+        .top = CGRectGetMinY(unionBorderRect) - CGRectGetMinY(bounds),
+        .left = CGRectGetMinX(unionBorderRect) - CGRectGetMinX(bounds),
+        .right = CGRectGetMaxX(bounds) - CGRectGetMaxX(unionBorderRect),
+        .bottom = CGRectGetMaxY(bounds) - CGRectGetMaxY(unionBorderRect),
+    };
 }
 
 @end
@@ -59,8 +201,9 @@ void OUILogViewTree(UIView *root)
 
 #endif
 
-static const CGFloat kPreviewShadowOffset = 4;
-static const CGFloat kPreviewShadowRadius = 12;
+
+#pragma mark -
+#pragma mark Rectangular shadows
 
 static struct {
     OUILoadedImage top;
@@ -77,6 +220,9 @@ static void LoadShadowImages(void)
 #if 0 && defined(DEBUG)
     // Code to make the shadow image (which I'll then dice up by hand into pieces).
     {
+        static const CGFloat kPreviewShadowOffset = 4;
+        static const CGFloat kPreviewShadowRadius = 12;
+        
         CGColorSpaceRef graySpace = CGColorSpaceCreateDeviceGray();
         CGFloat totalShadowSize = kPreviewShadowOffset + kPreviewShadowRadius; // worst case; less on sides and top.
         CGSize imageSize = CGSizeMake(8*totalShadowSize, 8*totalShadowSize);
@@ -85,7 +231,7 @@ static void LoadShadowImages(void)
         CGColorRef shadowColor = CGColorCreate(graySpace, shadowComponents);
         UIImage *shadowImage;
         
-        UIGraphicsBeginImageContext(imageSize);
+        OUIGraphicsBeginImageContext(imageSize);
         {
             CGContextRef ctx = UIGraphicsGetCurrentContext();
             
@@ -105,7 +251,7 @@ static void LoadShadowImages(void)
             
             shadowImage = UIGraphicsGetImageFromCurrentImageContext();
         }
-        UIGraphicsEndImageContext();
+        OUIGraphicsEndImageContext();
         
         CGColorRelease(shadowColor);
         CFRelease(graySpace);
@@ -143,6 +289,10 @@ static void _addShadowEdge(UIView *self, const OUILoadedImage *imageInfo, NSMuta
     OBASSERT(imageSize.height == rint(imageSize.height));
     OBASSERT(((int)imageSize.width & 1) ^ ((int)imageSize.height & 1));
     
+    //edge.layer.magnificationFilter = kCAFilterNearest;
+    //edge.layer.contentsGravity = kCAGravityResize;
+    //edge.layer.contentsRect = CGRectMake(0, 0, 1.0, 1.0);
+    
     /*
      contentsCenter is in normalized [0,1] coordinates, but the header also says:
      
@@ -155,6 +305,25 @@ static void _addShadowEdge(UIView *self, const OUILoadedImage *imageInfo, NSMuta
     [edge release];
 }
 
+//static void _addShadowEdge(UIView *self, const OUILoadedImage *imageInfo, NSMutableArray *edges)
+//{
+//    // Exactly one dimension should have an odd pixel count. This center column or row will get stretched via the contentsCenter property on the layer.
+//#ifdef OMNI_ASSERTIONS_ON
+//    CGSize imageSize = imageInfo->size;
+//#endif
+//    OBASSERT(imageSize.width == rint(imageSize.width));
+//    OBASSERT(imageSize.height == rint(imageSize.height));
+//    OBASSERT(((int)imageSize.width & 1) ^ ((int)imageSize.height & 1));
+//    
+//    UIImageView *edge = [[UIImageView alloc] initWithImage:imageInfo->image];
+//    [self addSubview:edge];
+//    
+//    edge.contentStretch = CGRectMake(0.5, 0.5, 0, 0);
+//    
+//    [edges addObject:edge];
+//    [edge release];
+//}
+
 NSArray *OUIViewAddShadowEdges(UIView *self)
 {
     NSMutableArray *edges = [NSMutableArray array];
@@ -166,13 +335,29 @@ NSArray *OUIViewAddShadowEdges(UIView *self)
     _addShadowEdge(self, &ShadowImages.left, edges);
     _addShadowEdge(self, &ShadowImages.right, edges);
     
+#if 0 && defined(DEBUG_robin)
+    CGFloat hue = 0;
+    for (UIView *edge in edges) {
+        edge.backgroundColor = [UIColor colorWithHue:hue saturation:0 brightness:1 alpha:1];
+        hue += 0.25;
+    }
+    
+//    UIImageView *shadowTestView = [[UIImageView alloc] initWithImage:[UIImage imageNamed:@"OUIShadowBorderBottom.png"]];
+//    shadowTestView.center = self.center;
+//    shadowTestView.bounds = CGRectMake(0, 0, CGRectGetWidth(self.bounds), 16);
+//    shadowTestView.contentStretch = CGRectMake(0.5, 0.5, 0, 0);
+//    shadowTestView.backgroundColor = [UIColor whiteColor];
+//    [self addSubview:shadowTestView];
+//    [shadowTestView release];
+#endif
+    
     return edges;
 }
 
 void OUIViewLayoutShadowEdges(UIView *self, NSArray *shadowEdges, BOOL flipped)
 {
     if ([shadowEdges count] != 4) {
-        OBASSERT_NOT_REACHED("What sort of crazy geomtry is this?");
+        OBASSERT_NOT_REACHED("What sort of crazy geometry is this?");
         return;
     }
     
@@ -190,7 +375,7 @@ void OUIViewLayoutShadowEdges(UIView *self, NSArray *shadowEdges, BOOL flipped)
     
 
     // TODO: We'll want one or more multi-part images that have the shadow pre rendered and offset.
-    static const CGFloat kShadowSize = 8;
+    static const CGFloat kShadowSize = 16;
     
     CGRect topRect = CGRectMake(CGRectGetMinX(bounds) - kShadowSize, CGRectGetMaxY(bounds), CGRectGetWidth(bounds) + 2*kShadowSize, kShadowSize);
     CGRect bottomRect = CGRectMake(CGRectGetMinX(bounds) - kShadowSize, CGRectGetMinY(bounds) - kShadowSize, CGRectGetWidth(bounds) + 2*kShadowSize, kShadowSize);
@@ -205,3 +390,32 @@ void OUIViewLayoutShadowEdges(UIView *self, NSArray *shadowEdges, BOOL flipped)
     edges.left.frame = CGRectMake(CGRectGetMinX(bounds) - kShadowSize, CGRectGetMinY(bounds), kShadowSize, CGRectGetHeight(bounds));
     edges.right.frame = CGRectMake(CGRectGetMaxX(bounds), CGRectGetMinY(bounds), kShadowSize, CGRectGetHeight(bounds));
 }
+
+#ifdef NS_BLOCKS_AVAILABLE
+
+void OUIWithoutAnimating(void (^actions)(void))
+{
+    BOOL wasAnimating = [UIView areAnimationsEnabled];
+    @try {
+        if (wasAnimating)
+            [UIView setAnimationsEnabled:NO];
+        actions();
+    } @finally {
+        OBASSERT(![UIView areAnimationsEnabled]); // Make sure something hasn't turned it on again, like -[UIToolbar setItem:] (Radar 8496247)
+        if (wasAnimating)
+            [UIView setAnimationsEnabled:YES];
+    }
+}
+
+void OUIWithAppropriateLayerAnimations(void (^actions)(void))
+{
+    BOOL shouldAnimate = [UIView areAnimationsEnabled];
+    
+    [CATransaction begin];
+    [CATransaction setValue:shouldAnimate ? (id)kCFBooleanFalse : (id)kCFBooleanTrue forKey:kCATransactionDisableActions];
+    actions();
+    [CATransaction commit];
+}
+
+#endif
+

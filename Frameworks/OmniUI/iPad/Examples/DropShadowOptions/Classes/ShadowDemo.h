@@ -11,6 +11,7 @@
 
 @interface ShadowDemo : UIView
 {
+@private
     BOOL _usingTimer;
 }
 

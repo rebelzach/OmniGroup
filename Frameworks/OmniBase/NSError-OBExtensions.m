@@ -13,6 +13,10 @@
 
 #import <Foundation/NSUserDefaults.h>
 
+#if !defined(TARGET_OS_IPHONE) || !TARGET_OS_IPHONE
+#import <Security/Authorization.h> // for errAuthorizationCanceled
+#endif
+
 RCS_ID("$Id$");
 
 // This might be useful for non-debug builds too.  These are only included in our errors, not Cocoa's, but if we use OBChainError when our code fails due to a Mac OS X framework call failing, we'll get information there.
@@ -77,7 +81,15 @@ static id (*original_initWithDomainCodeUserInfo)(NSError *self, SEL _cmd, NSStri
 
 - (BOOL)causedByUserCancelling;
 {    
-    return [self hasUnderlyingErrorDomain:NSCocoaErrorDomain code:NSUserCancelledError];
+    if ([self hasUnderlyingErrorDomain:NSCocoaErrorDomain code:NSUserCancelledError])
+        return YES;
+    
+#if !defined(TARGET_OS_IPHONE) || !TARGET_OS_IPHONE
+    if ([self hasUnderlyingErrorDomain:NSOSStatusErrorDomain code:errAuthorizationCanceled])
+        return YES;
+#endif
+    
+    return NO;
 }
 
 static void _mapPlistValueToUserInfoEntry(const void *key, const void *value, void *context)

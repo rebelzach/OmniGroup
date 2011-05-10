@@ -1,4 +1,4 @@
-// Copyright 2010 The Omni Group.  All rights reserved.
+// Copyright 2010-2011 The Omni Group.  All rights reserved.
 //
 // This software may only be used and reproduced according to the
 // terms in the file OmniSourceLicense.html, which should be
@@ -6,17 +6,19 @@
 // <http://www.omnigroup.com/developer/sourcecode/sourcelicense/>.
 
 #import "OUEFTextSpan.h"
-#import "OUIEditableFrame.h"
-#import "OUEFTextPosition.h"
 
 #import <CoreText/CoreText.h>
 #import <OmniQuartz/OQColor.h>
 #import <OmniAppKit/OAFontDescriptor.h>
 #import <OmniAppKit/OAParagraphStyle.h>
-#import "OUIColorInspectorSlice.h"
-#import "OUIFontInspectorSlice.h"
-
+#import <OmniAppKit/OATextAttributes.h>
+#import <OmniUI/OUIEditableFrame.h>
+#import <OmniUI/OUIColorInspectorSlice.h>
+#import <OmniUI/OUIFontInspectorSlice.h>
 #import <OmniBase/rcsid.h>
+
+#import "OUEFTextPosition.h"
+
 
 RCS_ID("$Id$");
 
@@ -30,6 +32,8 @@ RCS_ID("$Id$");
     }
     return self;
 }
+
+@synthesize frame;
 
 - (void)dealloc
 {
@@ -58,28 +62,6 @@ RCS_ID("$Id$");
     ...;
 }
 #endif
-
-#pragma mark OUIColorInspection
-
-- (NSSet *)colorsForInspectorSlice:(OUIInspectorSlice *)inspector;
-{
-    CGColorRef color = (CGColorRef)[frame attribute:(id)kCTForegroundColorAttributeName inRange:self];
-    if (color == NULL) {
-        return [NSSet set];
-    }
-    return [NSSet setWithObject:[OQColor colorWithCGColor:color]];
-}
-
-- (void)setColor:(OQColor *)color fromInspectorSlice:(OUIInspectorSlice *)inspector;
-{
-    [frame setValue:(id)[[color toColor] CGColor] forAttribute:(id)kCTForegroundColorAttributeName inRange:self];
-}
-
-- (NSString *)preferenceKeyForInspectorSlice:(OUIInspectorSlice *)inspector;
-{
-    return nil;
-}
-
 
 #pragma mark OUIFontInspection
 
@@ -123,6 +105,30 @@ RCS_ID("$Id$");
     [frame setValue:(id)newFont forAttribute:(id)kCTFontAttributeName inRange:self];
     if (newFont)
         CFRelease(newFont);
+}
+
+- (CTUnderlineStyle)underlineStyleForInspectorSlice:(OUIInspectorSlice *)inspector;
+{
+    return [(NSNumber *)[frame attribute:OAUnderlineStyleAttributeName inRange:self] intValue];
+}
+
+- (void)setUnderlineStyle:(CTUnderlineStyle)underlineStyle fromInspectorSlice:(OUIInspectorSlice *)inspector;
+{
+    NSNumber *value = [[NSNumber alloc] initWithInt:underlineStyle];
+    [frame setValue:value forAttribute:OAUnderlineStyleAttributeName inRange:self];
+    [value release];
+}
+
+- (CTUnderlineStyle)strikethroughStyleForInspectorSlice:(OUIInspectorSlice *)inspector;
+{
+    return [(NSNumber *)[frame attribute:OAStrikethroughStyleAttributeName inRange:self] intValue];
+}
+
+- (void)setStrikethroughStyle:(CTUnderlineStyle)strikethroughStyle fromInspectorSlice:(OUIInspectorSlice *)inspector;
+{
+    NSNumber *value = [[NSNumber alloc] initWithInt:strikethroughStyle];
+    [frame setValue:value forAttribute:OAStrikethroughStyleAttributeName inRange:self];
+    [value release];
 }
 
 #pragma mark OUIParagraphInspection

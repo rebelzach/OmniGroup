@@ -127,6 +127,7 @@
 @property (nonatomic) BOOL autoCorrectDoubleSpaceToPeriodAtSentenceEnd;
 @property (nonatomic) UITextAutocorrectionType autocorrectionType;  // defaults to UITextAutocorrectionTypeNo
 @property (nonatomic) UITextAutocapitalizationType autocapitalizationType; // defaults to UITextAutocapitalizationTypeNone
+@property (nonatomic) UITextGranularity tapSelectionGranularity;
 
 @property (nonatomic, readwrite, retain) UIView *inputAccessoryView;
 

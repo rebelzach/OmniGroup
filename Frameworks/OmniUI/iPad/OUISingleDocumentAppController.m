@@ -1,4 +1,4 @@
-// Copyright 2010 The Omni Group.  All rights reserved.
+// Copyright 2010-2011 The Omni Group.  All rights reserved.
 //
 // This software may only be used and reproduced according to the
 // terms in the file OmniSourceLicense.html, which should be
@@ -10,6 +10,7 @@
 #import <MobileCoreServices/MobileCoreServices.h>
 #import <OmniFoundation/OFBundleRegistry.h>
 #import <OmniFoundation/OFPreference.h>
+#import <OmniUI/OUIBarButtonItem.h>
 #import <OmniUI/OUIDocument.h>
 #import <OmniUI/OUIDocumentPicker.h>
 #import <OmniUI/OUIDocumentProxy.h>
@@ -17,6 +18,9 @@
 #import <OmniUI/OUIInspector.h>
 #import <OmniUI/OUIToolbarViewController.h>
 #import <OmniBase/OmniBase.h>
+#import <OmniFileStore/OFSFileManager.h>
+
+#import "OUIToolbarViewController-Internal.h"
 
 RCS_ID("$Id$");
 
@@ -30,7 +34,6 @@ static NSString * const SelectAction = @"select";
 - (void)_mainThread_finishedLoadingDocument:(id)result;
 - (void)_openDocument:(OUIDocumentProxy *)proxy animated:(BOOL)animated;
 - (void)_closeDocument:(id)sender;
-- (void)_undo:(id)sender;
 - (void)_setupGesturesOnTitleTextField;
 - (void)_proxyFinishedLoadingPreview:(NSNotification *)note;
 @end
@@ -69,7 +72,11 @@ static NSString * const SelectAction = @"select";
     
     [_closeDocumentBarButtonItem release];
     [_infoBarButtonItem release];
+    
+    OBASSERT(_undoBarButtonItem.undoManager == nil);
+    _undoBarButtonItem.undoBarButtonItemTarget = nil;
     [_undoBarButtonItem release];
+    
     [_documentTitleTextField release];
     [_documentTitleToolbarItem release];
     
@@ -87,8 +94,8 @@ static NSString * const SelectAction = @"select";
 {
     if (!_closeDocumentBarButtonItem) {
         NSString *closeDocumentTitle = NSLocalizedStringWithDefaultValue(@"Documents <back button>", @"OmniUI", OMNI_BUNDLE, @"Documents", @"Toolbar button title for returning to list of documents.");
-        _closeDocumentBarButtonItem = [[UIBarButtonItem alloc] initWithTitle:closeDocumentTitle
-                                                                       style:UIBarButtonItemStyleBordered target:self action:@selector(_closeDocument:)];
+        _closeDocumentBarButtonItem = [[OUIBarButtonItem alloc] initWithTitle:closeDocumentTitle
+                                                                        style:UIBarButtonItemStyleBordered target:self action:@selector(_closeDocument:)];
     }
     return _closeDocumentBarButtonItem;
 }
@@ -100,10 +107,12 @@ static NSString * const SelectAction = @"select";
     return _infoBarButtonItem;
 }
 
-- (UIBarButtonItem *)undoBarButtonItem;
+- (OUIUndoBarButtonItem *)undoBarButtonItem;
 {
-    if (!_undoBarButtonItem)
-        _undoBarButtonItem = [[UIBarButtonItem alloc] initWithBarButtonSystemItem:UIBarButtonSystemItemUndo target:self action:@selector(_undo:)];
+    if (!_undoBarButtonItem) {
+        _undoBarButtonItem = [[OUIUndoBarButtonItem alloc] init];
+        _undoBarButtonItem.undoBarButtonItemTarget = self;
+    }
     return _undoBarButtonItem;
 }
 
@@ -224,12 +233,21 @@ static NSString * const SelectAction = @"select";
     
     if (![newName isEqualToString:originalName]) {
         OUIDocumentProxy *oldProxy = _document.proxy;
+        NSURL *oldURL = [[[oldProxy url] retain] autorelease];
         OUIDocumentPicker *documentPicker = self.documentPicker;
         if (oldProxy) {
             NSString *documentType = [self documentTypeForURL:oldProxy.url];
-            OUIDocumentProxy *newProxy = [documentPicker renameProxy:oldProxy toName:newName type:documentType];
-            OBASSERT(newProxy);
-            [_document setProxy:newProxy];
+            NSURL *newProxyURL = [documentPicker renameProxy:oldProxy toName:newName type:documentType];
+            
+            // <bug://bugs/61021> Code below checks for "/" in the name, but there could still be other renaming problems that we don't know about.
+            if (oldURL == newProxyURL) {
+                NSString *msg = [NSString stringWithFormat:NSLocalizedStringFromTableInBundle(@"Unable to rename document to \"%@\".", @"OmniUI", OMNI_BUNDLE, @"error when renaming a document"), newName];                
+                NSError *err = [[NSError alloc] initWithDomain:NSURLErrorDomain code:0 userInfo:[NSDictionary dictionaryWithObjectsAndKeys:msg, NSLocalizedDescriptionKey, msg, NSLocalizedFailureReasonErrorKey, nil]];
+                OUI_PRESENT_ERROR(err);
+                [err release];
+            } else {
+                [_document proxyURLChanged];
+            }
         } else {
             // new document does not have a proxy yet
             NSError *error = nil;
@@ -240,11 +258,9 @@ static NSString * const SelectAction = @"select";
                 NSLog(@"Error renaming unsaved document to %@: %@", [safeURL path], [error toPropertyList]);
             }
             [documentPicker rescanDocuments];
-            
-            NSString *safeName = [[[safeURL path] lastPathComponent] stringByDeletingPathExtension];
-            textField.text = safeName;
         }
         
+        textField.text = [[[[_document url] path] lastPathComponent] stringByDeletingPathExtension];
     }
     
     // UITextField adjusts its recognizers when it starts editing. Put ours back.
@@ -254,6 +270,13 @@ static NSString * const SelectAction = @"select";
 - (BOOL)textField:(UITextField *)textField shouldChangeCharactersInRange:(NSRange)range replacementString:(NSString *)string;
 {
     OBPRECONDITION(textField == _documentTitleTextField);
+    
+    // <bug://bugs/61021>
+    NSRange r = [string rangeOfString:@"/"];
+    if (r.location != NSNotFound) {
+        return NO;
+    }
+    
     return YES;
 }
 
@@ -271,8 +294,7 @@ static NSString * const SelectAction = @"select";
 #pragma mark UIApplicationDelegate
 
 - (BOOL)application:(UIApplication *)application didFinishLaunchingWithOptions:(NSDictionary *)launchOptions;
-{
-    
+{    
     [self _setupGesturesOnTitleTextField];
     
     OUIDocumentPicker *documentPicker = self.documentPicker;
@@ -280,10 +302,19 @@ static NSString * const SelectAction = @"select";
     {
         NSMutableArray *toolbarItems = [NSMutableArray array];
         
-        UIBarButtonItem *addItem = [[[UIBarButtonItem alloc] initWithTitle:NSLocalizedStringFromTableInBundle(@"New Document", @"OmniUI", OMNI_BUNDLE, @"Toolbar button for creating a new, empty document.")
-                                                                     style:UIBarButtonItemStyleBordered
-                                                                    target:self action:@selector(makeNewDocument:)] autorelease];
-        [toolbarItems addObject:addItem];
+        if (documentPicker.documentTypeForNewFiles != nil) {
+            UIBarButtonItem *addItem = [[[OUIBarButtonItem alloc] initWithTitle:NSLocalizedStringFromTableInBundle(@"New Document", @"OmniUI", OMNI_BUNDLE, @"Toolbar button for creating a new, empty document.")
+                                                                          style:UIBarButtonItemStyleBordered
+                                                                         target:self action:@selector(makeNewDocument:)] autorelease];
+            [toolbarItems addObject:addItem];
+        }
+        
+        if ([[OFPreferenceWrapper sharedPreferenceWrapper] boolForKey:@"OUIImportEnabled"]) {
+            UIBarButtonItem *importItem = [[[OUIBarButtonItem alloc] initWithImage:[UIImage imageNamed:@"OUIToolbarButtonImport.png"] 
+                                                                             style:UIBarButtonItemStyleBordered 
+                                                                            target:self action:@selector(showSyncMenu:)] autorelease];
+            [toolbarItems addObject:importItem];
+        }
         
         [toolbarItems addObject:[[[UIBarButtonItem alloc] initWithBarButtonSystemItem:UIBarButtonSystemItemFlexibleSpace target:nil action:NULL] autorelease]];
         
@@ -292,7 +323,7 @@ static NSString * const SelectAction = @"select";
         [toolbarItems addObject:[[[UIBarButtonItem alloc] initWithBarButtonSystemItem:UIBarButtonSystemItemFlexibleSpace target:nil action:NULL] autorelease]];
         
 #if 0 // Punting on favorites for 1.0
-        UIBarButtonItem *favoritesItem = [[[UIBarButtonItem alloc] initWithImage:[UIImage imageNamed:@"OUIToolbarFavoriteHollow.png"] style:UIBarButtonItemStyleBordered target:self action:@selector(toggleFavorites:)] autorelease];
+        UIBarButtonItem *favoritesItem = [[[OUIBarButtonItem alloc] initWithImage:[UIImage imageNamed:@"OUIToolbarFavoriteHollow.png"] style:UIBarButtonItemStyleBordered target:self action:@selector(toggleFavorites:)] autorelease];
         [toolbarItems addObject:favoritesItem];
         
         UISearchBar *searchBar = [[[UISearchBar alloc] initWithFrame:CGRectMake(0, 0, 200, 20)] autorelease];
@@ -301,7 +332,7 @@ static NSString * const SelectAction = @"select";
 #endif
         [toolbarItems addObject:self.appMenuBarItem];
         
-        documentPicker.toolbarItems = [toolbarItems copy];
+        documentPicker.toolbarItems = [[toolbarItems copy] autorelease];
     }
     
     [OUIDocumentProxyView setPlaceholderPreviewImage:[UIImage imageNamed:@"DocumentPreviewPlaceholder.png"]];
@@ -394,7 +425,47 @@ static NSString * const SelectAction = @"select";
     return YES;
 }
 
-- (void)applicationWillTerminate:(UIApplication *)application;
+- (BOOL)application:(UIApplication *)application openURL:(NSURL *)url sourceApplication:(NSString *)sourceApplication annotation:(id)annotation;
+{
+    if ([self isSpecialURL:url]) {
+        return [self handleSpecialURL:url];
+    }
+
+    [self.documentPicker performSelector:@selector(_loadProxies)];
+
+    OUIDocumentProxy *proxy = [self.documentPicker proxyWithURL:url];
+    if (!proxy)
+        return NO;
+
+    NSString *path = [[[url path] stringByExpandingTildeInPath] stringByStandardizingPath];
+    NSString *extension = [path pathExtension];
+    
+    // Move the proxy out of the Inbox immediately
+    if ([path hasPrefix:[[OUIDocumentPicker userDocumentsDirectory] stringByExpandingTildeInPath]] && 
+        [[[path stringByDeletingLastPathComponent] lastPathComponent] isEqualToString:@"Inbox"]) {
+        if (extension != nil) {
+            NSString *name;
+            NSUInteger counter;
+            OFSFileManagerSplitNameAndCounter(proxy.name, &name, &counter);
+            NSString *duplicatePath = [OUIDocumentPicker availablePathInDirectory:[OUIDocumentPicker userDocumentsDirectory] baseName:name extension:extension counter:&counter];
+            NSError *error = nil;
+            if ([[NSFileManager defaultManager] copyItemAtPath:path toPath:duplicatePath error:&error]) {
+                [[NSFileManager defaultManager] removeItemAtPath:path error:NULL];
+                NSURL *duplicateURL = [NSURL fileURLWithPath:duplicatePath];
+                [self.documentPicker performSelector:@selector(_loadProxies)];
+                proxy = [self.documentPicker proxyWithURL:duplicateURL];
+            }
+        }
+    }
+    
+    if (!proxy)
+        return NO;
+    
+    [self _openDocument:proxy animated:NO];
+    return YES;
+}
+
+- (void)_saveDocumentAndState;
 {
     NSArray *nextLaunchAction = nil;
     
@@ -418,6 +489,18 @@ static NSString * const SelectAction = @"select";
     
     if (nextLaunchAction)
         [[NSUserDefaults standardUserDefaults] setObject:nextLaunchAction forKey:OUINextLaunchActionDefaultsKey];
+}
+
+- (void)applicationDidEnterBackground:(UIApplication *)application;
+// From the documentation:  "Your implementation of this method has approximately five seconds to perform any tasks and return.  You should perform any tasks relating to adjusting your user interface before this method exits but other tasks (such as saving state) should be moved to a concurrent dispatch queue or secondary thread as needed."
+{
+    // For now, we'll just hope that saving happens within five seconds (like we have been doing for app termination)
+    [self _saveDocumentAndState];
+}
+
+- (void)applicationWillTerminate:(UIApplication *)application;
+{
+    [self _saveDocumentAndState];
     
     [super applicationWillTerminate:application];
 }
@@ -425,7 +508,7 @@ static NSString * const SelectAction = @"select";
 #pragma mark -
 #pragma mark OUIDocumentPickerDelegate
 
-- (id <OUIDocument>)createNewDocumentAtURL:(NSURL *)url error:(NSError **)outError;
+- (BOOL)createNewDocumentAtURL:(NSURL *)url error:(NSError **)outError;
 {
     OBPRECONDITION(_document == nil);
     
@@ -434,16 +517,43 @@ static NSString * const SelectAction = @"select";
     
     OUIDocument *document = [[[cls alloc] initEmptyDocumentToBeSavedToURL:url error:outError] autorelease];
     if (document == nil)
-        return nil;
+        return NO;
     
-    // This positions the view controller's view as it will be and thus allows it to emit the right PDF.
-    [_toolbarViewController willAnimateToInnerViewController:document.viewController];
+    // We aren't going to open this document instance -- it will get thrown away. But we want to at least size it correctly so that any PDF preview is emitted correctly.
+    [_toolbarViewController adjustSizeToMatch:document.viewController];
     
     // We do go ahead and save the document immediately so that we can animate it into view most easily.
-    if (![document saveAsNewDocumentToURL:url error:outError])
-        return nil;
-    
-    return document;
+    BOOL ok = [document saveAsNewDocumentToURL:url error:outError];
+    [document willClose];
+    return ok;
+}
+
+#pragma mark -
+#pragma mark OUIUndoBarButtonItemTarget
+
+- (void)undoBarButtonItemWillShowPopover;
+{
+    [self dismissInspectorImmediately];
+}
+
+- (void)undo:(id)sender;
+{
+    [_document undo:sender];
+}
+
+- (void)redo:(id)sender;
+{
+    [_document redo:sender];
+}
+
+- (BOOL)canPerformAction:(SEL)action withSender:(id)sender;
+{
+    if (action == @selector(undo:))
+        return [_document.undoManager canUndo];
+    else if (action == @selector(redo:))
+        return [_document.undoManager canRedo];
+        
+    return YES;
 }
 
 #pragma mark -
@@ -513,6 +623,13 @@ static NSString * const SelectAction = @"select";
         _toolbarViewController.innerViewController = _document.viewController;
         [self hideActivityIndicator]; // will be up for the initial app load
     }
+
+    // Start automatically tracking undo state from this document's undo manager
+    _undoBarButtonItem.undoManager = _document.undoManager;
+
+    // UIWindow will automatically create an undo manager if one isn't found along the responder chain. We want to be darn sure that don't end up getting two undo managers and accidentally splitting our registrations between them.
+    OBASSERT([_document undoManager] == [_document.viewController undoManager]);
+    OBASSERT([_document undoManager] == [_document.viewController.view undoManager]); // Does your view controller implement -undoManager? We don't do this for you right now.
 }
 
 - (void)_openDocument:(OUIDocumentProxy *)proxy animated:(BOOL)animated;
@@ -541,10 +658,19 @@ static NSString * const SelectAction = @"select";
         return;
     }
     
+    // Stop tracking the state from this document's undo manager
+    _undoBarButtonItem.undoManager = nil;
+    
     [_window endEditing:YES];
     
     // The inspector would animate closed and raise an exception, having detected it was getting deallocated while still visible (but animating away).
     [self dismissInspectorImmediately];
+    
+    // Ending editing may have started opened an undo group, with the nested group stuff for autosave (see OUIDocument). Give the runloop a chance to close the nested group.
+    if ([_document.undoManager groupingLevel] > 0) {
+        [[NSRunLoop currentRunLoop] runUntilDate:[NSDate distantPast]];
+        OBASSERT([_document.undoManager groupingLevel] == 0);
+    }
     
     // Start up the spinner and stop accepting events. We are NOT passing the picker here since that would add it to the view and lay it out. This is usually OK, but if we've rotated the device since opening, the picker layout would provoke the previews to load new previews (due to their size changing). Here we just want to start the spinner.
     [_toolbarViewController willAnimateToInnerViewController:nil];
@@ -557,6 +683,7 @@ static NSString * const SelectAction = @"select";
     // Now, start a rescan of the proxies
     OUIDocumentPicker *picker = self.documentPicker;
     NSURL *closingURL = [[_document.url copy] autorelease];
+    [picker.previewScrollView sortProxies];
     [picker rescanDocumentsScrollingToURL:closingURL animated:NO];
     
     OUIDocumentProxy *proxy = [picker proxyWithURL:closingURL];
@@ -584,15 +711,7 @@ static NSString * const SelectAction = @"select";
 
 - (void)_showInspector:(id)sender;
 {
-    // We don't update the text editor editor live, so this is easiest for now.
-    [_window endEditing:YES/*force*/];
-    
     [self showInspectorFromBarButtonItem:_infoBarButtonItem];
-}
-
-- (void)_undo:(id)sender;
-{
-    [_document undo:sender];
 }
 
 - (void)_handleTitleTapGesture:(UIGestureRecognizer*)gestureRecognizer;
@@ -604,6 +723,12 @@ static NSString * const SelectAction = @"select";
 - (void)_handleTitleDoubleTapGesture:(UIGestureRecognizer*)gestureRecognizer;
 {
     OBASSERT(gestureRecognizer.view == _documentTitleTextField);
+    
+    // Switch to a white background while editing so that the text loupe will work properly.
+    [_documentTitleTextField setTextColor:[UIColor blackColor]];
+    [_documentTitleTextField setBackgroundColor:[UIColor whiteColor]];
+    _documentTitleTextField.borderStyle = UITextBorderStyleBezel;
+    
     [_documentTitleTextField becomeFirstResponder];
 }
 
@@ -623,6 +748,11 @@ static NSString * const SelectAction = @"select";
     
     [_documentTitleTextField addGestureRecognizer:titleTextFieldTap];
     [_documentTitleTextField addGestureRecognizer:titleTextFieldDoubleTap];
+    
+    // Restore the regular colors of the text field.
+    [_documentTitleTextField setTextColor:[UIColor whiteColor]];
+    [_documentTitleTextField setBackgroundColor:[UIColor clearColor]];
+    _documentTitleTextField.borderStyle = UITextBorderStyleNone;
 }
 
 @end

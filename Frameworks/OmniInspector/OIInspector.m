@@ -1,4 +1,4 @@
-// Copyright 2005-2008, 2010 Omni Development, Inc.  All rights reserved.
+// Copyright 2005-2008, 2010-2011 Omni Development, Inc.  All rights reserved.
 //
 // This software may only be used and reproduced according to the
 // terms in the file OmniSourceLicense.html, which should be
@@ -84,16 +84,9 @@ static OFEnumNameTable *OIVisibilityStateNameTable = nil;
     } else
         inspectorResourceBundle = sourceBundle;
     
-    Class cls;
-    if (sourceBundle) {
-        cls = [sourceBundle classNamed:className];
-        if (!cls)
-            [NSException raise:NSInvalidArgumentException format:@"Inspector dictionary in bundle %@ specified class '%@' that doesn't exist: %@", sourceBundle, className, dict];
-    } else {
-        cls = NSClassFromString(className);
-        if (!cls)
-            [NSException raise:NSInvalidArgumentException format:@"Inspector dictionary specified class that doesn't exist: %@", dict];
-    }
+    Class cls = NSClassFromString(className);
+    if (!cls)
+        [NSException raise:NSInvalidArgumentException format:@"Inspector dictionary specified class that doesn't exist: %@", dict];
     
     return [[cls alloc] initWithDictionary:dict bundle:inspectorResourceBundle];
 }
@@ -101,7 +94,7 @@ static OFEnumNameTable *OIVisibilityStateNameTable = nil;
 // Make sure inspector subclasses are calling [super initWithDictionary:bundle:]
 - init;
 {
-    OBRejectUnusedImplementation(isa, _cmd);
+    OBRejectUnusedImplementation([self class], _cmd);
     return nil;
 }
 
@@ -110,8 +103,8 @@ static OFEnumNameTable *OIVisibilityStateNameTable = nil;
     OBPRECONDITION(dict);
     OBPRECONDITION([self conformsToProtocol:@protocol(OIConcreteInspector)]);
 
-    if (![super init])
-	return nil;
+    if (!(self = [super init]))
+        return nil;
 
     {
 	// Ensure that deprecated methods from the old OIGroupedInspector protocol aren't around
@@ -312,6 +305,29 @@ static OFEnumNameTable *OIVisibilityStateNameTable = nil;
         }
         [self setControlsEnabled:enabled inView:subview];
     }
+}
+
+- (BOOL)shouldBeUsedForObject:(id)object;
+{
+    if (![[self inspectedObjectsPredicate] evaluateWithObject:object])
+        return NO;
+        
+    // Optional finer grain predicate.
+    NSPredicate *predicate = [self shouldBeUsedForObjectPredicate];
+    if (predicate)
+        return [predicate evaluateWithObject:object];
+    
+    return YES;
+}
+
+- (NSPredicate *)shouldBeUsedForObjectPredicate;
+{
+    return nil;
+}
+
+- (void)inspectorDidResize:(OIInspector *)resizedInspector;
+{
+    OBASSERT_NOT_REACHED("This should only be called on inspectors which are ancestors of the resized inspector.");
 }
 
 #pragma mark -

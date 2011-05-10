@@ -17,6 +17,9 @@
 
 @end
 
+#if defined(TARGET_OS_IPHONE) && TARGET_OS_IPHONE
+#define OFDataShouldBeEqual(expected, actual) STAssertEquals(expected, actual, nil)
+#else
 extern void OFDiffData(SenTestCase *testCase, NSData *expected, NSData *actual);
 
 #define OFDataShouldBeEqual(expected,actual) \
@@ -24,6 +27,14 @@ do { \
     BOOL dataEqual = [expected isEqual:actual]; \
     if (!dataEqual) { \
         OFDiffData(self, expected, actual); \
-        should(dataEqual); \
+        STAssertTrue(dataEqual, nil); \
     } \
 } while (0)
+
+#endif
+
+#ifdef NS_BLOCKS_AVAILABLE
+typedef BOOL (^OFDiffFilesPathFilter)(NSString *relativePath);
+extern void OFDiffFiles(SenTestCase *testCase, NSString *path1, NSString *path2, OFDiffFilesPathFilter pathFilter);
+#endif
+

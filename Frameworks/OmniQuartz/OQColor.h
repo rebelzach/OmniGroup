@@ -40,6 +40,22 @@ extern CGFloat OQGetColorLuma(NSColor *c, CGFloat *outAlpha);
 
 extern OQLinearRGBA OQCompositeLinearRGBA(OQLinearRGBA T, OQLinearRGBA B);
 
+static inline OQLinearRGBA OQBlendLinearRGBAColors(OQLinearRGBA A, OQLinearRGBA B, CGFloat fractionOfB)
+{
+    OBPRECONDITION(fractionOfB >= 0.0);
+    OBPRECONDITION(fractionOfB <= 1.0);
+    
+    CGFloat fractionOfA = 1.0f - fractionOfB;
+    
+    // 0 = A, 1 = B
+    return (OQLinearRGBA){
+        A.r * fractionOfA + B.r * fractionOfB,
+        A.g * fractionOfA + B.g * fractionOfB,
+        A.b * fractionOfA + B.b * fractionOfB,
+        A.a * fractionOfA + B.a * fractionOfB,
+    };
+}
+
 #if !defined(TARGET_OS_IPHONE) || !TARGET_OS_IPHONE
 extern BOOL OQCompositeColors(NSColor **ioTopColor, NSColor *bottomColor);
 #else
@@ -48,8 +64,11 @@ extern BOOL OQCompositeColors(OQColor **ioTopColor, OQColor *bottomColor);
 
 extern CGColorRef OQCreateCompositeColorRef(CGColorRef topColor, CGColorRef bottomColor, BOOL *isOpaque);
 
+CGColorRef OQCreateCompositeColorFromColors(CGColorSpaceRef destinationColorSpace, NSArray *colors); // Bottom-most color goes first and must be opaque
+
 #if !defined(TARGET_OS_IPHONE) || !TARGET_OS_IPHONE
-extern CGColorRef OQCreateColorRefFromColor(NSColor *c);
+extern CGColorRef OQCreateColorRefFromColor(CGColorSpaceRef destinationColorSpace, NSColor *c);
+extern NSColor *OQColorFromColorRef(CGColorRef c);
 
 extern CGColorRef OQCreateGrayColorRefFromColor(NSColor *c);
 #endif
@@ -153,3 +172,12 @@ extern OQLinearRGBA OQHSVToRGB(OSHSV c);
 @end
 @interface OQColor (OQColor) <OQColor>
 @end
+
+#if defined(TARGET_OS_IPHONE) && TARGET_OS_IPHONE
+#import <UIKit/UIColor.h>
+static inline UIColor *OQPlatformColorFromHSV(OSHSV hsv)
+{
+    return [UIColor colorWithHue:hsv.h saturation:hsv.s brightness:hsv.v alpha:hsv.a];
+}
+#endif
+

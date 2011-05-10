@@ -1,4 +1,4 @@
-// Copyright 2005-2010 Omni Development, Inc.  All rights reserved.
+// Copyright 2005-2011 Omni Development, Inc.  All rights reserved.
 //
 // This software may only be used and reproduced according to the
 // terms in the file OmniSourceLicense.html, which should be
@@ -600,7 +600,7 @@ NSString *OFRationalToStringForStorage(struct OFRationalNumberStruct a)
     return [result autorelease];
 }
 
-NSString *OFRationalToStringForLocale(struct OFRationalNumberStruct a, NSDictionary *dict)
+NSString *OFRationalToStringForLocale(struct OFRationalNumberStruct a, id locale)
 {
     if (a.numerator == 0) {
         return (a.lop)? @"~0" : @"0";
@@ -609,9 +609,9 @@ NSString *OFRationalToStringForLocale(struct OFRationalNumberStruct a, NSDiction
     NSString *buf;
     /* We use NSString's signed number format here in order to get the locale's desired sign behavior. This does mean that we'll produce an incorrect result for numbers with large numerators. */
     if (a.denominator == 1)
-        buf = [[NSString alloc] initWithFormat:@"%ld" locale:dict, ( a.negative? -a.numerator : a.numerator )];
+        buf = [[NSString alloc] initWithFormat:@"%ld" locale:locale, ( a.negative? -a.numerator : a.numerator )];
     else
-        buf = [[NSString alloc] initWithFormat:@"%ld/%lu" locale:dict, ( a.negative? -a.numerator : a.numerator ), a.denominator];
+        buf = [[NSString alloc] initWithFormat:@"%ld/%lu" locale:locale, ( a.negative? -a.numerator : a.numerator ), a.denominator];
 
     if (a.lop) {
         NSString *result = [@"~" stringByAppendingString:buf];
@@ -729,6 +729,9 @@ int main(int argc, char **argv) {
 
 - initWithBytes:(const void *)rat objCType:(const char *)typeEncoding;
 {
+    if (!(self = [super init]))
+        return nil;
+    
     static const char * const rationalType = @encode(struct OFRationalNumberStruct);
     if (rationalType != typeEncoding && strcmp(rationalType, typeEncoding) != 0) {
         OBRejectInvalidCall(self, _cmd, @"objCType was \"%s\", expecting \"%s\"", typeEncoding, rationalType);
@@ -830,7 +833,7 @@ int main(int argc, char **argv) {
     return r.lop? NO : YES;
 }
 
-- descriptionWithLocale:(NSDictionary *)aLocale
+- (NSString *)descriptionWithLocale:(id)aLocale
 {
     OBASSERT(strcmp(@encode(struct OFRationalNumberStruct), [self objCType]) == 0);
 

@@ -1,4 +1,4 @@
-// Copyright 2000-2008, 2010 Omni Development, Inc.  All rights reserved.
+// Copyright 2000-2008, 2010-2011 Omni Development, Inc.  All rights reserved.
 //
 // This software may only be used and reproduced according to the
 // terms in the file OmniSourceLicense.html, which should be
@@ -52,7 +52,7 @@ static OFTimeSpanUnit timeSpanUnits[UNITS_COUNT];
     timeSpanUnits[UNITS_YEARS].localizedAbbreviatedString = NSLocalizedStringFromTableInBundle(@"y", @"OmniFoundation", bundle, @"time span formatter span");
     timeSpanUnits[UNITS_YEARS].pluralString = @"years";
     timeSpanUnits[UNITS_YEARS].singularString = @"year";
-    timeSpanUnits[UNITS_YEARS].abbreviatedString = @"t";
+    timeSpanUnits[UNITS_YEARS].abbreviatedString = @"y";
     timeSpanUnits[UNITS_YEARS].spanGetImplementation = (FLOAT_IMP)[OFTimeSpan instanceMethodForSelector:@selector(years)];
     timeSpanUnits[UNITS_YEARS].spanSetImplementation = (SETFLOAT_IMP)[OFTimeSpan instanceMethodForSelector:@selector(setYears:)];
     timeSpanUnits[UNITS_YEARS].formatterMultiplierImplementation = (FLOAT_IMP)[self instanceMethodForSelector:@selector(hoursPerYear)];
@@ -127,7 +127,8 @@ static OFTimeSpanUnit timeSpanUnits[UNITS_COUNT];
 
 - init;
 {
-    [super init];
+    if (!(self = [super init]))
+        return nil;
 
     numberFormatter = [[NSNumberFormatter alloc] init];
     [numberFormatter setFormatterBehavior:NSNumberFormatterBehavior10_4];
@@ -363,60 +364,47 @@ static OFTimeSpanUnit timeSpanUnits[UNITS_COUNT];
     return (_flags.displayUnits >> UNITS_YEARS) & 1;
 }
 
+static void _setDisplayUnitBit(OFTimeSpanFormatter *self, unsigned bitIndex, BOOL value)
+{
+    if (value)
+        self->_flags.displayUnits |= (1 << bitIndex);
+    else
+        self->_flags.displayUnits &= ~(1 << bitIndex);
+}
+
 - (void)setDisplaySeconds:(BOOL)aBool;
 {
-    if (aBool)
-        _flags.displayUnits |= (1 << UNITS_SECONDS);
-    else
-        _flags.displayUnits &= ~(1 << UNITS_SECONDS);
+    _setDisplayUnitBit(self, UNITS_SECONDS, aBool);
 }
 
 - (void)setDisplayMinutes:(BOOL)aBool;
 {
-    if (aBool)
-        _flags.displayUnits |= (1 << UNITS_MINUTES);
-    else
-        _flags.displayUnits &= ~(1 << UNITS_MINUTES);
+    _setDisplayUnitBit(self, UNITS_MINUTES, aBool);
 }
 
 - (void)setDisplayHours:(BOOL)aBool;
 {
-    if (aBool)
-        _flags.displayUnits |= (1 << UNITS_HOURS);
-    else
-        _flags.displayUnits &= ~(1 << UNITS_HOURS);
+    _setDisplayUnitBit(self, UNITS_HOURS, aBool);
 }
 
 - (void)setDisplayDays:(BOOL)aBool;
 {
-    if (aBool)
-        _flags.displayUnits |= (1 << UNITS_DAYS);
-    else
-        _flags.displayUnits &= ~(1 << UNITS_DAYS);
+    _setDisplayUnitBit(self, UNITS_DAYS, aBool);
 }
 
 - (void)setDisplayWeeks:(BOOL)aBool;
 {
-    if (aBool)
-        _flags.displayUnits |= (1 << UNITS_WEEKS);
-    else
-        _flags.displayUnits &= ~(1 << UNITS_WEEKS);
+    _setDisplayUnitBit(self, UNITS_WEEKS, aBool);
 }
 
 - (void)setDisplayMonths:(BOOL)aBool;
 {
-    if (aBool)
-        _flags.displayUnits |= (1 << UNITS_MONTHS);
-    else
-        _flags.displayUnits &= ~(1 << UNITS_MONTHS);
+    _setDisplayUnitBit(self, UNITS_MONTHS, aBool);
 }
 
 - (void)setDisplayYears:(BOOL)aBool;
 {
-    if (aBool)
-        _flags.displayUnits |= (1 << UNITS_YEARS);
-    else
-        _flags.displayUnits &= ~(1 << UNITS_YEARS);
+    _setDisplayUnitBit(self, UNITS_YEARS, aBool);
 }
 
 - (void)setStandardWorkTime; // 8h = 1d, 40h = 1w, 160h = 1m

@@ -40,6 +40,7 @@
 		341897950B7C01650032C5FA /* NSSetCommand-OFFixes.m in Sources */ = {isa = PBXBuildFile; fileRef = 341897930B7C01650032C5FA /* NSSetCommand-OFFixes.m */; };
 		341F551D0F72F08100632558 /* OFXMLParser.h in Headers */ = {isa = PBXBuildFile; fileRef = 341F551B0F72F08100632558 /* OFXMLParser.h */; settings = {ATTRIBUTES = (Public, ); }; };
 		341F551E0F72F08100632558 /* OFXMLParser.m in Sources */ = {isa = PBXBuildFile; fileRef = 341F551C0F72F08100632558 /* OFXMLParser.m */; };
+		342535AE128CBB7A009EFAC0 /* OFGeometryTests.m in Sources */ = {isa = PBXBuildFile; fileRef = 342535A9128CB9AD009EFAC0 /* OFGeometryTests.m */; };
 		342877B308EC788400D89442 /* NSBundle-OFExtensions.h in Headers */ = {isa = PBXBuildFile; fileRef = 342877B108EC788400D89442 /* NSBundle-OFExtensions.h */; settings = {ATTRIBUTES = (Public, ); }; };
 		342877B408EC788400D89442 /* NSBundle-OFExtensions.m in Sources */ = {isa = PBXBuildFile; fileRef = 342877B208EC788400D89442 /* NSBundle-OFExtensions.m */; };
 		342A9EC808C89683006AA532 /* NSComparisonPredicate-OFExtensions.h in Headers */ = {isa = PBXBuildFile; fileRef = 342A9EC608C89683006AA532 /* NSComparisonPredicate-OFExtensions.h */; settings = {ATTRIBUTES = (Public, ); }; };
@@ -218,13 +219,26 @@
 		344D0AAA1190DDE400264D89 /* OFErrors.m in Sources */ = {isa = PBXBuildFile; fileRef = 344D0A891190DB4700264D89 /* OFErrors.m */; };
 		3455B53011116CCA00074705 /* NSFileManager-OFSimpleExtensions.h in Headers */ = {isa = PBXBuildFile; fileRef = 3455B52E11116CCA00074705 /* NSFileManager-OFSimpleExtensions.h */; settings = {ATTRIBUTES = (Public, ); }; };
 		3455B53111116CCA00074705 /* NSFileManager-OFSimpleExtensions.m in Sources */ = {isa = PBXBuildFile; fileRef = 3455B52F11116CCA00074705 /* NSFileManager-OFSimpleExtensions.m */; };
+		34562BE911AB1278005F186D /* OFDateFormatConversion.h in Headers */ = {isa = PBXBuildFile; fileRef = 34562BE711AB1278005F186D /* OFDateFormatConversion.h */; settings = {ATTRIBUTES = (Public, ); }; };
+		34562BEA11AB1278005F186D /* OFDateFormatConversion.m in Sources */ = {isa = PBXBuildFile; fileRef = 34562BE811AB1278005F186D /* OFDateFormatConversion.m */; };
+		34562BF311AB13EE005F186D /* OFDateFormatConversion.m in Sources */ = {isa = PBXBuildFile; fileRef = 34562BE811AB1278005F186D /* OFDateFormatConversion.m */; };
+		34562BF411AB13EE005F186D /* OFDateFormatConversion.h in Headers */ = {isa = PBXBuildFile; fileRef = 34562BE711AB1278005F186D /* OFDateFormatConversion.h */; settings = {ATTRIBUTES = (Public, ); }; };
+		34562D6311AC2E78005F186D /* OFDateFormatConversionTests.m in Sources */ = {isa = PBXBuildFile; fileRef = 34562D6211AC2E78005F186D /* OFDateFormatConversionTests.m */; };
 		345886331035C727006E712F /* SFMT-LICENSE.txt in Resources */ = {isa = PBXBuildFile; fileRef = 343B36CE103514E40006290A /* SFMT-LICENSE.txt */; };
 		345E73E60C6D06630034A811 /* OFErrorRecovery.h in Headers */ = {isa = PBXBuildFile; fileRef = 345E73E40C6D06630034A811 /* OFErrorRecovery.h */; settings = {ATTRIBUTES = (Public, ); }; };
 		345E73E70C6D06630034A811 /* OFErrorRecovery.m in Sources */ = {isa = PBXBuildFile; fileRef = 345E73E50C6D06630034A811 /* OFErrorRecovery.m */; };
 		346149F008EB0D2F00F4853E /* OFErrorExtensionTests.m in Sources */ = {isa = PBXBuildFile; fileRef = 346149EF08EB0D2F00F4853E /* OFErrorExtensionTests.m */; };
+		3465C66E11DBA33F0060F19E /* OFAlias.m in Sources */ = {isa = PBXBuildFile; fileRef = E2FCCB3D062205A40097A11C /* OFAlias.m */; };
+		3465C66F11DBA33F0060F19E /* OFAlias.h in Headers */ = {isa = PBXBuildFile; fileRef = E2FCCB3C062205A40097A11C /* OFAlias.h */; settings = {ATTRIBUTES = (Public, ); }; };
 		346DE9EB0D861EA7000C9E97 /* NSData-OFEncoding.h in Headers */ = {isa = PBXBuildFile; fileRef = 346DE9E90D861EA7000C9E97 /* NSData-OFEncoding.h */; settings = {ATTRIBUTES = (Public, ); }; };
 		346DE9EC0D861EA7000C9E97 /* NSData-OFEncoding.m in Sources */ = {isa = PBXBuildFile; fileRef = 346DE9EA0D861EA7000C9E97 /* NSData-OFEncoding.m */; };
 		346DF739099BA59B008F5B5F /* OFXMLStringTests.m in Sources */ = {isa = PBXBuildFile; fileRef = 346DF737099BA59B008F5B5F /* OFXMLStringTests.m */; };
+		3472CB4E12E3BF1B00F646AE /* NSData-OFSignature.h in Headers */ = {isa = PBXBuildFile; fileRef = 3472CB4C12E3BF1B00F646AE /* NSData-OFSignature.h */; settings = {ATTRIBUTES = (Public, ); }; };
+		3472CB4F12E3BF1B00F646AE /* NSData-OFSignature.m in Sources */ = {isa = PBXBuildFile; fileRef = 3472CB4D12E3BF1B00F646AE /* NSData-OFSignature.m */; };
+		3472CB5012E3BF1B00F646AE /* NSData-OFSignature.h in Headers */ = {isa = PBXBuildFile; fileRef = 3472CB4C12E3BF1B00F646AE /* NSData-OFSignature.h */; settings = {ATTRIBUTES = (Public, ); }; };
+		3472CB5112E3BF1B00F646AE /* NSData-OFSignature.m in Sources */ = {isa = PBXBuildFile; fileRef = 3472CB4D12E3BF1B00F646AE /* NSData-OFSignature.m */; };
+		3472CB6912E3BFBD00F646AE /* CFData-OFExtensions.h in Headers */ = {isa = PBXBuildFile; fileRef = 34043BDB0DA3EFA500761C40 /* CFData-OFExtensions.h */; settings = {ATTRIBUTES = (Public, ); }; };
+		3472CB6A12E3BFBE00F646AE /* CFData-OFExtensions.m in Sources */ = {isa = PBXBuildFile; fileRef = 34043BDC0DA3EFA500761C40 /* CFData-OFExtensions.m */; };
 		3475A0290DE2330E00FB73CC /* OFTestCase.h in Headers */ = {isa = PBXBuildFile; fileRef = 3475A0270DE2330E00FB73CC /* OFTestCase.h */; };
 		3475A02A0DE2330E00FB73CC /* OFTestCase.m in Sources */ = {isa = PBXBuildFile; fileRef = 3475A0280DE2330E00FB73CC /* OFTestCase.m */; };
 		3475A0760DE2350F00FB73CC /* OBTestCase.m in Sources */ = {isa = PBXBuildFile; fileRef = 3475A0250DE232F900FB73CC /* OBTestCase.m */; };
@@ -241,12 +255,18 @@
 		347DB93E0D86509200338653 /* NSObject-OFAppleScriptExtensions.m in Sources */ = {isa = PBXBuildFile; fileRef = 347DB93C0D86509200338653 /* NSObject-OFAppleScriptExtensions.m */; };
 		347EFD7C0DD4D7C900D6F347 /* OFXMLUnparsedElement.h in Headers */ = {isa = PBXBuildFile; fileRef = 347EFD7A0DD4D7C900D6F347 /* OFXMLUnparsedElement.h */; settings = {ATTRIBUTES = (Public, ); }; };
 		347EFD7D0DD4D7C900D6F347 /* OFXMLUnparsedElement.m in Sources */ = {isa = PBXBuildFile; fileRef = 347EFD7B0DD4D7C900D6F347 /* OFXMLUnparsedElement.m */; };
+		347F624F11D5323600025DAE /* NSFileManager-OFTemporaryPath.h in Headers */ = {isa = PBXBuildFile; fileRef = 34AD4CB30DF846B8008974EB /* NSFileManager-OFTemporaryPath.h */; settings = {ATTRIBUTES = (Public, ); }; };
+		347F625011D5323700025DAE /* NSFileManager-OFTemporaryPath.m in Sources */ = {isa = PBXBuildFile; fileRef = 34AD4CB40DF846B8008974EB /* NSFileManager-OFTemporaryPath.m */; };
 		3482890B0A93A29F0064561B /* CFArrayExtensionsTests.m in Sources */ = {isa = PBXBuildFile; fileRef = 3482890A0A93A29F0064561B /* CFArrayExtensionsTests.m */; };
 		34850C840A71491100675995 /* OFBinding.h in Headers */ = {isa = PBXBuildFile; fileRef = 34850C820A71491100675995 /* OFBinding.h */; settings = {ATTRIBUTES = (Public, ); }; };
 		34850C850A71491100675995 /* OFBinding.m in Sources */ = {isa = PBXBuildFile; fileRef = 34850C830A71491100675995 /* OFBinding.m */; };
+		348C2C1C128C66E000E773FD /* OmniFoundation.h in Headers */ = {isa = PBXBuildFile; fileRef = 00E51C82FE8AAEA611C9CC38 /* OmniFoundation.h */; settings = {ATTRIBUTES = (Public, ); }; };
+		34920C7D0D58D2A0001CBD3D /* DateProcessing.strings in Resources */ = {isa = PBXBuildFile; fileRef = 34920C7B0D58D2A0001CBD3D /* DateProcessing.strings */; };
 		349950AA0F72FF95007C0BC9 /* OFXMLParserTarget.h in Headers */ = {isa = PBXBuildFile; fileRef = 349950A80F72FF8C007C0BC9 /* OFXMLParserTarget.h */; settings = {ATTRIBUTES = (Public, ); }; };
 		349CCB0E118F3BCC0069017B /* OFEnumNameTable-OFXMLArchiving.h in Headers */ = {isa = PBXBuildFile; fileRef = 349CCB0C118F3BCC0069017B /* OFEnumNameTable-OFXMLArchiving.h */; settings = {ATTRIBUTES = (Public, ); }; };
 		349CCB0F118F3BCC0069017B /* OFEnumNameTable-OFXMLArchiving.m in Sources */ = {isa = PBXBuildFile; fileRef = 349CCB0D118F3BCC0069017B /* OFEnumNameTable-OFXMLArchiving.m */; };
+		349D7D8E11E54747005B8C5D /* OFTestCase.m in Sources */ = {isa = PBXBuildFile; fileRef = 3475A0280DE2330E00FB73CC /* OFTestCase.m */; };
+		349D7D8F11E54747005B8C5D /* OFTestCase.h in Headers */ = {isa = PBXBuildFile; fileRef = 3475A0270DE2330E00FB73CC /* OFTestCase.h */; };
 		34A2CDF60D865A6100219E36 /* OFEnumNameTable-OFFlagMask.h in Headers */ = {isa = PBXBuildFile; fileRef = 34A2CDF40D865A6100219E36 /* OFEnumNameTable-OFFlagMask.h */; settings = {ATTRIBUTES = (Public, ); }; };
 		34A2CDF70D865A6100219E36 /* OFEnumNameTable-OFFlagMask.m in Sources */ = {isa = PBXBuildFile; fileRef = 34A2CDF50D865A6100219E36 /* OFEnumNameTable-OFFlagMask.m */; };
 		34A2CE8B0D865E9200219E36 /* OFCharacterScanner-OFTrie.h in Headers */ = {isa = PBXBuildFile; fileRef = 34A2CE890D865E9200219E36 /* OFCharacterScanner-OFTrie.h */; settings = {ATTRIBUTES = (Public, ); }; };
@@ -255,6 +275,10 @@
 		34A8C2AE10532007004244E9 /* OFReadWriteFileBuffer.m in Sources */ = {isa = PBXBuildFile; fileRef = 34A8C2AC10532007004244E9 /* OFReadWriteFileBuffer.m */; };
 		34AD4CB50DF846B8008974EB /* NSFileManager-OFTemporaryPath.h in Headers */ = {isa = PBXBuildFile; fileRef = 34AD4CB30DF846B8008974EB /* NSFileManager-OFTemporaryPath.h */; settings = {ATTRIBUTES = (Public, ); }; };
 		34AD4CB60DF846B8008974EB /* NSFileManager-OFTemporaryPath.m in Sources */ = {isa = PBXBuildFile; fileRef = 34AD4CB40DF846B8008974EB /* NSFileManager-OFTemporaryPath.m */; };
+		34AE03CE12652796008B6FAF /* OFNetReachability.h in Headers */ = {isa = PBXBuildFile; fileRef = 34AE03CC12652796008B6FAF /* OFNetReachability.h */; settings = {ATTRIBUTES = (Public, ); }; };
+		34AE03CF12652796008B6FAF /* OFNetReachability.m in Sources */ = {isa = PBXBuildFile; fileRef = 34AE03CD12652796008B6FAF /* OFNetReachability.m */; };
+		34AE03D012652796008B6FAF /* OFNetReachability.h in Headers */ = {isa = PBXBuildFile; fileRef = 34AE03CC12652796008B6FAF /* OFNetReachability.h */; settings = {ATTRIBUTES = (Public, ); }; };
+		34AE03D112652796008B6FAF /* OFNetReachability.m in Sources */ = {isa = PBXBuildFile; fileRef = 34AE03CD12652796008B6FAF /* OFNetReachability.m */; };
 		34AF16CA0C4FE9BE00ADC170 /* OFXMLComment.h in Headers */ = {isa = PBXBuildFile; fileRef = 34AF16C80C4FE9BE00ADC170 /* OFXMLComment.h */; settings = {ATTRIBUTES = (Public, ); }; };
 		34AF16CB0C4FE9BE00ADC170 /* OFXMLComment.m in Sources */ = {isa = PBXBuildFile; fileRef = 34AF16C90C4FE9BE00ADC170 /* OFXMLComment.m */; };
 		34B051970B2750400095EA0A /* OFDateXMLTests.m in Sources */ = {isa = PBXBuildFile; fileRef = 34B051960B2750400095EA0A /* OFDateXMLTests.m */; };
@@ -274,9 +298,13 @@
 		34E576C20E245BEB00C1F5FB /* OFRelativeDateParser-Internal.h in Headers */ = {isa = PBXBuildFile; fileRef = 34E576C10E245BEB00C1F5FB /* OFRelativeDateParser-Internal.h */; };
 		34E7BCC109A4FE9300BB8A5D /* NSScriptClassDescription-OFExtensions.h in Headers */ = {isa = PBXBuildFile; fileRef = 34E7BCBF09A4FE9300BB8A5D /* NSScriptClassDescription-OFExtensions.h */; settings = {ATTRIBUTES = (Public, ); }; };
 		34E7BCC209A4FE9300BB8A5D /* NSScriptClassDescription-OFExtensions.m in Sources */ = {isa = PBXBuildFile; fileRef = 34E7BCC009A4FE9300BB8A5D /* NSScriptClassDescription-OFExtensions.m */; };
+		34E8675D11DBDDBA004CF9CC /* NSAttributedString-OFExtensions.m in Sources */ = {isa = PBXBuildFile; fileRef = 00E51D0DFE8AAEA611C9CC38 /* NSAttributedString-OFExtensions.m */; };
+		34E8675E11DBDDBB004CF9CC /* NSAttributedString-OFExtensions.h in Headers */ = {isa = PBXBuildFile; fileRef = 00E51D29FE8AAEA611C9CC38 /* NSAttributedString-OFExtensions.h */; settings = {ATTRIBUTES = (Public, ); }; };
 		34F7C0B90D82354A007E383C /* libxml2.dylib in Frameworks */ = {isa = PBXBuildFile; fileRef = 34F7C0B80D82354A007E383C /* libxml2.dylib */; };
 		34F8271B107E904600458A71 /* OFExtent.h in Headers */ = {isa = PBXBuildFile; fileRef = 34F82719107E904600458A71 /* OFExtent.h */; settings = {ATTRIBUTES = (Public, ); }; };
 		34F8271C107E904600458A71 /* OFExtent.m in Sources */ = {isa = PBXBuildFile; fileRef = 34F8271A107E904600458A71 /* OFExtent.m */; };
+		34FB803D12B6E3E4004644E1 /* OFSimpleLock-i386.h in Headers */ = {isa = PBXBuildFile; fileRef = 00E51D00FE8AAEA611C9CC38 /* OFSimpleLock-i386.h */; settings = {ATTRIBUTES = (Public, ); }; };
+		34FB803E12B6E3E7004644E1 /* OFSimpleLock.h in Headers */ = {isa = PBXBuildFile; fileRef = 00E51D05FE8AAEA611C9CC38 /* OFSimpleLock.h */; settings = {ATTRIBUTES = (Public, ); }; };
 		4A45FF630CA489E600752880 /* NSConditionLock-OFFixes.m in Sources */ = {isa = PBXBuildFile; fileRef = 4A45FF610CA489E600752880 /* NSConditionLock-OFFixes.m */; };
 		4A4E060008AA72B10098FF0F /* OFAddScriptCommand.h in Headers */ = {isa = PBXBuildFile; fileRef = 34A71C400663D4F40097A113 /* OFAddScriptCommand.h */; settings = {ATTRIBUTES = (Public, ); }; };
 		4A4E060108AA72B10098FF0F /* OFRemoveScriptCommand.h in Headers */ = {isa = PBXBuildFile; fileRef = 34A71C420663D4F40097A113 /* OFRemoveScriptCommand.h */; settings = {ATTRIBUTES = (Public, ); }; };
@@ -405,7 +433,7 @@
 		4A4E069B08AA72B10098FF0F /* OFScheduledEvent.h in Headers */ = {isa = PBXBuildFile; fileRef = 00E51D79FE8AAEA611C9CC38 /* OFScheduledEvent.h */; settings = {ATTRIBUTES = (Public, ); }; };
 		4A4E069C08AA72B10098FF0F /* OFScheduler.h in Headers */ = {isa = PBXBuildFile; fileRef = 00E51D7AFE8AAEA611C9CC38 /* OFScheduler.h */; settings = {ATTRIBUTES = (Public, ); }; };
 		4A4E069D08AA72B10098FF0F /* OFTemporaryPlaceholderInvocation.h in Headers */ = {isa = PBXBuildFile; fileRef = 00E51D7BFE8AAEA611C9CC38 /* OFTemporaryPlaceholderInvocation.h */; };
-		4A4E069E08AA72B10098FF0F /* OFXMLBuffer.h in Headers */ = {isa = PBXBuildFile; fileRef = 3476E4EE07C3BDBA0097A113 /* OFXMLBuffer.h */; };
+		4A4E069E08AA72B10098FF0F /* OFXMLBuffer.h in Headers */ = {isa = PBXBuildFile; fileRef = 3476E4EE07C3BDBA0097A113 /* OFXMLBuffer.h */; settings = {ATTRIBUTES = (Public, ); }; };
 		4A4E069F08AA72B10098FF0F /* OFXMLCursor.h in Headers */ = {isa = PBXBuildFile; fileRef = 341841F9050CF7800097A113 /* OFXMLCursor.h */; settings = {ATTRIBUTES = (Public, ); }; };
 		4A4E06A008AA72B10098FF0F /* OFXMLDocument.h in Headers */ = {isa = PBXBuildFile; fileRef = 344F2BF5050A921B0097A113 /* OFXMLDocument.h */; settings = {ATTRIBUTES = (Public, ); }; };
 		4A4E06A108AA72B10098FF0F /* OFXMLElement.h in Headers */ = {isa = PBXBuildFile; fileRef = 344F2BF9050A924C0097A113 /* OFXMLElement.h */; settings = {ATTRIBUTES = (Public, ); }; };
@@ -414,6 +442,7 @@
 		4A4E06A408AA72B10098FF0F /* OFXMLIdentifierRegistryObject.h in Headers */ = {isa = PBXBuildFile; fileRef = 34F1CADB066244350097A113 /* OFXMLIdentifierRegistryObject.h */; settings = {ATTRIBUTES = (Public, ); }; };
 		4A4E06A508AA72B10098FF0F /* OFXMLString.h in Headers */ = {isa = PBXBuildFile; fileRef = 344F2EA0050ADFBF0097A113 /* OFXMLString.h */; settings = {ATTRIBUTES = (Public, ); }; };
 		4A4E06A608AA72B10098FF0F /* OFXMLWhitespaceBehavior.h in Headers */ = {isa = PBXBuildFile; fileRef = 344F2E1A050ABDE60097A113 /* OFXMLWhitespaceBehavior.h */; settings = {ATTRIBUTES = (Public, ); }; };
+		4A4E06A808AA72B10098FF0F /* OmniFoundation.strings in Resources */ = {isa = PBXBuildFile; fileRef = 16ACF158FFC40A50C697A14E /* OmniFoundation.strings */; };
 		4A4E06A908AA72B10098FF0F /* Language.strings in Resources */ = {isa = PBXBuildFile; fileRef = 1D3F8FBD03DE7CFA0097A138 /* Language.strings */; };
 		4A4E06AA08AA72B10098FF0F /* EnglishToISO.strings in Resources */ = {isa = PBXBuildFile; fileRef = 1D3F8FBE03DE7CFA0097A138 /* EnglishToISO.strings */; };
 		4A4E06AE08AA72B10098FF0F /* NSObjectSpecifier-OFFixes.m in Sources */ = {isa = PBXBuildFile; fileRef = 34A71C3F0663D4F40097A113 /* NSObjectSpecifier-OFFixes.m */; };
@@ -635,6 +664,8 @@
 		A2CCF0ED1014FE9F0087623E /* OFXMLSignature.h in Headers */ = {isa = PBXBuildFile; fileRef = A2A0D6A30FE9CBFE00F55E7C /* OFXMLSignature.h */; settings = {ATTRIBUTES = (Public, ); }; };
 		A2CCF0EE1014FE9F0087623E /* OFXMLSignature.m in Sources */ = {isa = PBXBuildFile; fileRef = A2A0D6A40FE9CBFE00F55E7C /* OFXMLSignature.m */; };
 		A2CCF0EF1014FEA00087623E /* OFXMLSignature-Utilities.m in Sources */ = {isa = PBXBuildFile; fileRef = A23667F3100E6DCF0076D2D8 /* OFXMLSignature-Utilities.m */; };
+		A2CF1A5112D512BC00B705E7 /* CFPropertyList-OFExtensions.h in Headers */ = {isa = PBXBuildFile; fileRef = A2B8C03A0563FD43000AFC06 /* CFPropertyList-OFExtensions.h */; settings = {ATTRIBUTES = (Public, ); }; };
+		A2CF1A5212D512BD00B705E7 /* CFPropertyList-OFExtensions.m in Sources */ = {isa = PBXBuildFile; fileRef = A2B8C03B0563FD43000AFC06 /* CFPropertyList-OFExtensions.m */; };
 		A2D50A6D0F7ACAAB006D5764 /* 0001-Namespaces.svg in Resources */ = {isa = PBXBuildFile; fileRef = A2D50A6C0F7ACAAB006D5764 /* 0001-Namespaces.svg */; };
 		A2D50A990F7ACD63006D5764 /* 0002-abcs.xml in Resources */ = {isa = PBXBuildFile; fileRef = A2D50A980F7ACD63006D5764 /* 0002-abcs.xml */; };
 		A2DF1E3B0F782CAA0093FEFA /* OFXMLMaker.h in Headers */ = {isa = PBXBuildFile; fileRef = A2DF1E390F782CAA0093FEFA /* OFXMLMaker.h */; settings = {ATTRIBUTES = (Public, ); }; };
@@ -645,6 +676,13 @@
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
+		340115E211E516020016ADB3 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = 00E51C5BFE8AAEA611C9CC38 /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = 344D08B91190D47300264D89;
+			remoteInfo = OmniFoundationTouch;
+		};
 		343B36411034F7170006290A /* PBXContainerItemProxy */ = {
 			isa = PBXContainerItemProxy;
 			containerPortal = 00E51C5BFE8AAEA611C9CC38 /* Project object */;
@@ -934,6 +972,7 @@
 		06DB16D5FF5DC915C697A12F /* CFString-OFExtensions.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = "CFString-OFExtensions.h"; sourceTree = "<group>"; };
 		06DB16D6FF5DC915C697A12F /* CFString-OFExtensions.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = "CFString-OFExtensions.m"; sourceTree = "<group>"; };
 		06DB16D9FF5DCC3BC697A12F /* OFLowerCaseTest.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = OFLowerCaseTest.m; sourceTree = "<group>"; };
+		16ACF159FFC40A50C697A14E /* English */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.plist.strings; name = English; path = English.lproj/OmniFoundation.strings; sourceTree = "<group>"; };
 		1872811AFF5DF33FC697A12F /* CFDictionary-OFExtensions.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = "CFDictionary-OFExtensions.h"; sourceTree = "<group>"; };
 		1872811BFF5DF33FC697A12F /* CFDictionary-OFExtensions.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = "CFDictionary-OFExtensions.m"; sourceTree = "<group>"; };
 		1872811EFF5E2339C697A12F /* OFLowercaseStringCache.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = OFLowercaseStringCache.h; sourceTree = "<group>"; };
@@ -947,6 +986,7 @@
 		1D3F8FBE03DE7CFA0097A138 /* EnglishToISO.strings */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.plist.strings; path = EnglishToISO.strings; sourceTree = "<group>"; };
 		28C3E2D1FEF0F1AAC697A12D /* OFTimeSpanFormatter.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = OFTimeSpanFormatter.m; sourceTree = "<group>"; };
 		28C3E2D2FEF0F1AAC697A12D /* OFTimeSpanFormatter.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = OFTimeSpanFormatter.h; sourceTree = "<group>"; };
+		340115D411E515DB0016ADB3 /* libOmniFoundationTouchTests.a */ = {isa = PBXFileReference; explicitFileType = archive.ar; includeInIndex = 0; path = libOmniFoundationTouchTests.a; sourceTree = BUILT_PRODUCTS_DIR; };
 		34043BDB0DA3EFA500761C40 /* CFData-OFExtensions.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = "CFData-OFExtensions.h"; sourceTree = "<group>"; };
 		34043BDC0DA3EFA500761C40 /* CFData-OFExtensions.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = "CFData-OFExtensions.m"; sourceTree = "<group>"; };
 		340CDBD5098A9E03006270CA /* ExceptionHandling.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = ExceptionHandling.framework; path = /System/Library/Frameworks/ExceptionHandling.framework; sourceTree = "<absolute>"; };
@@ -968,6 +1008,7 @@
 		341897930B7C01650032C5FA /* NSSetCommand-OFFixes.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = "NSSetCommand-OFFixes.m"; sourceTree = "<group>"; };
 		341F551B0F72F08100632558 /* OFXMLParser.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = OFXMLParser.h; sourceTree = "<group>"; };
 		341F551C0F72F08100632558 /* OFXMLParser.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = OFXMLParser.m; sourceTree = "<group>"; };
+		342535A9128CB9AD009EFAC0 /* OFGeometryTests.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = OFGeometryTests.m; sourceTree = "<group>"; };
 		342877B108EC788400D89442 /* NSBundle-OFExtensions.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = "NSBundle-OFExtensions.h"; sourceTree = "<group>"; };
 		342877B208EC788400D89442 /* NSBundle-OFExtensions.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = "NSBundle-OFExtensions.m"; sourceTree = "<group>"; };
 		342A9EC608C89683006AA532 /* NSComparisonPredicate-OFExtensions.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = "NSComparisonPredicate-OFExtensions.h"; sourceTree = "<group>"; };
@@ -1094,12 +1135,17 @@
 		345069110D747ED4004B40C2 /* OFCrashOnExceptionTest */ = {isa = PBXFileReference; explicitFileType = "compiled.mach-o.executable"; includeInIndex = 0; path = OFCrashOnExceptionTest; sourceTree = BUILT_PRODUCTS_DIR; };
 		3455B52E11116CCA00074705 /* NSFileManager-OFSimpleExtensions.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = "NSFileManager-OFSimpleExtensions.h"; sourceTree = "<group>"; };
 		3455B52F11116CCA00074705 /* NSFileManager-OFSimpleExtensions.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = "NSFileManager-OFSimpleExtensions.m"; sourceTree = "<group>"; };
+		34562BE711AB1278005F186D /* OFDateFormatConversion.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = OFDateFormatConversion.h; sourceTree = "<group>"; };
+		34562BE811AB1278005F186D /* OFDateFormatConversion.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = OFDateFormatConversion.m; sourceTree = "<group>"; };
+		34562D6211AC2E78005F186D /* OFDateFormatConversionTests.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = OFDateFormatConversionTests.m; sourceTree = "<group>"; };
 		345E73E40C6D06630034A811 /* OFErrorRecovery.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = OFErrorRecovery.h; sourceTree = "<group>"; };
 		345E73E50C6D06630034A811 /* OFErrorRecovery.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = OFErrorRecovery.m; sourceTree = "<group>"; };
 		346149EF08EB0D2F00F4853E /* OFErrorExtensionTests.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = OFErrorExtensionTests.m; sourceTree = "<group>"; };
 		346DE9E90D861EA7000C9E97 /* NSData-OFEncoding.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = "NSData-OFEncoding.h"; sourceTree = "<group>"; };
 		346DE9EA0D861EA7000C9E97 /* NSData-OFEncoding.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = "NSData-OFEncoding.m"; sourceTree = "<group>"; };
 		346DF737099BA59B008F5B5F /* OFXMLStringTests.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = OFXMLStringTests.m; sourceTree = "<group>"; };
+		3472CB4C12E3BF1B00F646AE /* NSData-OFSignature.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = "NSData-OFSignature.h"; sourceTree = "<group>"; };
+		3472CB4D12E3BF1B00F646AE /* NSData-OFSignature.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = "NSData-OFSignature.m"; sourceTree = "<group>"; };
 		3475A0240DE232F900FB73CC /* OBTestCase.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = OBTestCase.h; path = ../../OmniBase/OBTestCase.h; sourceTree = "<group>"; };
 		3475A0250DE232F900FB73CC /* OBTestCase.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; name = OBTestCase.m; path = ../../OmniBase/OBTestCase.m; sourceTree = "<group>"; };
 		3475A0270DE2330E00FB73CC /* OFTestCase.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = OFTestCase.h; sourceTree = "<group>"; };
@@ -1114,8 +1160,8 @@
 		347DB8870D864B9200338653 /* NSString-OFCharacterEnumeration.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = "NSString-OFCharacterEnumeration.h"; sourceTree = "<group>"; };
 		347DB9140D864F1000338653 /* NSAppleEventDescriptor-OFExtensions.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = "NSAppleEventDescriptor-OFExtensions.h"; sourceTree = "<group>"; };
 		347DB9150D864F1000338653 /* NSAppleEventDescriptor-OFExtensions.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = "NSAppleEventDescriptor-OFExtensions.m"; sourceTree = "<group>"; };
-		347DB93B0D86509200338653 /* NSObject-OFAppleScriptExtensions.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = "NSObject-OFAppleScriptExtensions.h"; sourceTree = "<group>"; };
-		347DB93C0D86509200338653 /* NSObject-OFAppleScriptExtensions.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = "NSObject-OFAppleScriptExtensions.m"; sourceTree = "<group>"; };
+		347DB93B0D86509200338653 /* NSObject-OFAppleScriptExtensions.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = "NSObject-OFAppleScriptExtensions.h"; path = "../OpenStepExtensions.subproj/NSObject-OFAppleScriptExtensions.h"; sourceTree = "<group>"; };
+		347DB93C0D86509200338653 /* NSObject-OFAppleScriptExtensions.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; name = "NSObject-OFAppleScriptExtensions.m"; path = "../OpenStepExtensions.subproj/NSObject-OFAppleScriptExtensions.m"; sourceTree = "<group>"; };
 		347EFD7A0DD4D7C900D6F347 /* OFXMLUnparsedElement.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = OFXMLUnparsedElement.h; sourceTree = "<group>"; };
 		347EFD7B0DD4D7C900D6F347 /* OFXMLUnparsedElement.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = OFXMLUnparsedElement.m; sourceTree = "<group>"; };
 		3482890A0A93A29F0064561B /* CFArrayExtensionsTests.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = CFArrayExtensionsTests.m; sourceTree = "<group>"; };
@@ -1123,6 +1169,7 @@
 		34850C830A71491100675995 /* OFBinding.m */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.c.objc; path = OFBinding.m; sourceTree = "<group>"; };
 		348A50860571490C0097A113 /* OFPoint.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = OFPoint.h; sourceTree = "<group>"; };
 		348A50870571490C0097A113 /* OFPoint.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = OFPoint.m; sourceTree = "<group>"; };
+		34920C7C0D58D2A0001CBD3D /* English */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.plist.strings; name = English; path = English.lproj/DateProcessing.strings; sourceTree = "<group>"; };
 		349950A80F72FF8C007C0BC9 /* OFXMLParserTarget.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = OFXMLParserTarget.h; sourceTree = "<group>"; };
 		349CCB0C118F3BCC0069017B /* OFEnumNameTable-OFXMLArchiving.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = "OFEnumNameTable-OFXMLArchiving.h"; sourceTree = "<group>"; };
 		349CCB0D118F3BCC0069017B /* OFEnumNameTable-OFXMLArchiving.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = "OFEnumNameTable-OFXMLArchiving.m"; sourceTree = "<group>"; };
@@ -1144,6 +1191,8 @@
 		34A8C2AC10532007004244E9 /* OFReadWriteFileBuffer.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = OFReadWriteFileBuffer.m; sourceTree = "<group>"; };
 		34AD4CB30DF846B8008974EB /* NSFileManager-OFTemporaryPath.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = "NSFileManager-OFTemporaryPath.h"; sourceTree = "<group>"; };
 		34AD4CB40DF846B8008974EB /* NSFileManager-OFTemporaryPath.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = "NSFileManager-OFTemporaryPath.m"; sourceTree = "<group>"; };
+		34AE03CC12652796008B6FAF /* OFNetReachability.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = OFNetReachability.h; sourceTree = "<group>"; };
+		34AE03CD12652796008B6FAF /* OFNetReachability.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = OFNetReachability.m; sourceTree = "<group>"; };
 		34AF16C80C4FE9BE00ADC170 /* OFXMLComment.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = OFXMLComment.h; sourceTree = "<group>"; };
 		34AF16C90C4FE9BE00ADC170 /* OFXMLComment.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = OFXMLComment.m; sourceTree = "<group>"; };
 		34B051960B2750400095EA0A /* OFDateXMLTests.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = OFDateXMLTests.m; sourceTree = "<group>"; };
@@ -1308,6 +1357,13 @@
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
+		340115D211E515DB0016ADB3 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 		343B36321034F68F0006290A /* Frameworks */ = {
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
@@ -1505,30 +1561,32 @@
 		00E51CE1FE8AAEA611C9CC38 /* Formatters */ = {
 			isa = PBXGroup;
 			children = (
-				00E51CE3FE8AAEA611C9CC38 /* OFCapitalizeFormatter.m */,
-				00E51CE4FE8AAEA611C9CC38 /* OFDateFormatter.m */,
-				00E51CE5FE8AAEA611C9CC38 /* OFSimpleStringFormatter.m */,
-				34DF03980B05108D00D82DFC /* OFRelativeDateFormatter.m */,
-				00E51CE6FE8AAEA611C9CC38 /* OFSocialSecurityFormatter.m */,
-				00E51CE8FE8AAEA611C9CC38 /* OFTelephoneFormatter.m */,
-				28C3E2D1FEF0F1AAC697A12D /* OFTimeSpanFormatter.m */,
-				6C8D1731097D84D500DD3EAE /* OFTimeSpan.m */,
-				00E51CE9FE8AAEA611C9CC38 /* OFUppercaseFormatter.m */,
-				00E51CEAFE8AAEA611C9CC38 /* OFZipCodeFormatter.m */,
-				F5FBE7A7025BEF9F0100084B /* OFMultipleNumberFormatter.m */,
-				A25B740710B200C200195654 /* OFMetricPrefixFormatter.m */,
 				00E51CECFE8AAEA611C9CC38 /* OFCapitalizeFormatter.h */,
+				00E51CE3FE8AAEA611C9CC38 /* OFCapitalizeFormatter.m */,
 				00E51CEDFE8AAEA611C9CC38 /* OFDateFormatter.h */,
-				34DF03970B05108D00D82DFC /* OFRelativeDateFormatter.h */,
-				00E51CEEFE8AAEA611C9CC38 /* OFSimpleStringFormatter.h */,
-				00E51CEFFE8AAEA611C9CC38 /* OFSocialSecurityFormatter.h */,
-				00E51CF1FE8AAEA611C9CC38 /* OFTelephoneFormatter.h */,
-				28C3E2D2FEF0F1AAC697A12D /* OFTimeSpanFormatter.h */,
-				6C8D1730097D84D500DD3EAE /* OFTimeSpan.h */,
-				00E51CF2FE8AAEA611C9CC38 /* OFUppercaseFormatter.h */,
-				00E51CF3FE8AAEA611C9CC38 /* OFZipCodeFormatter.h */,
-				F5FBE7A8025BEF9F0100084B /* OFMultipleNumberFormatter.h */,
+				00E51CE4FE8AAEA611C9CC38 /* OFDateFormatter.m */,
+				34562BE711AB1278005F186D /* OFDateFormatConversion.h */,
+				34562BE811AB1278005F186D /* OFDateFormatConversion.m */,
 				A25B740610B200C200195654 /* OFMetricPrefixFormatter.h */,
+				A25B740710B200C200195654 /* OFMetricPrefixFormatter.m */,
+				F5FBE7A8025BEF9F0100084B /* OFMultipleNumberFormatter.h */,
+				F5FBE7A7025BEF9F0100084B /* OFMultipleNumberFormatter.m */,
+				34DF03970B05108D00D82DFC /* OFRelativeDateFormatter.h */,
+				34DF03980B05108D00D82DFC /* OFRelativeDateFormatter.m */,
+				00E51CEEFE8AAEA611C9CC38 /* OFSimpleStringFormatter.h */,
+				00E51CE5FE8AAEA611C9CC38 /* OFSimpleStringFormatter.m */,
+				00E51CEFFE8AAEA611C9CC38 /* OFSocialSecurityFormatter.h */,
+				00E51CE6FE8AAEA611C9CC38 /* OFSocialSecurityFormatter.m */,
+				00E51CF1FE8AAEA611C9CC38 /* OFTelephoneFormatter.h */,
+				00E51CE8FE8AAEA611C9CC38 /* OFTelephoneFormatter.m */,
+				6C8D1730097D84D500DD3EAE /* OFTimeSpan.h */,
+				6C8D1731097D84D500DD3EAE /* OFTimeSpan.m */,
+				28C3E2D2FEF0F1AAC697A12D /* OFTimeSpanFormatter.h */,
+				28C3E2D1FEF0F1AAC697A12D /* OFTimeSpanFormatter.m */,
+				00E51CF2FE8AAEA611C9CC38 /* OFUppercaseFormatter.h */,
+				00E51CE9FE8AAEA611C9CC38 /* OFUppercaseFormatter.m */,
+				00E51CF3FE8AAEA611C9CC38 /* OFZipCodeFormatter.h */,
+				00E51CEAFE8AAEA611C9CC38 /* OFZipCodeFormatter.m */,
 				A2102A96093BCBBE006D0DFC /* Unit Scale */,
 			);
 			name = Formatters;
@@ -1577,6 +1635,8 @@
 				346DE9EA0D861EA7000C9E97 /* NSData-OFEncoding.m */,
 				00E51D2CFE8AAEA611C9CC38 /* NSData-OFExtensions.h */,
 				00E51D10FE8AAEA611C9CC38 /* NSData-OFExtensions.m */,
+				3472CB4C12E3BF1B00F646AE /* NSData-OFSignature.h */,
+				3472CB4D12E3BF1B00F646AE /* NSData-OFSignature.m */,
 				3416584D0FEB4B7400F4CED4 /* NSData-OFFileIO.h */,
 				3416584E0FEB4B7400F4CED4 /* NSData-OFFileIO.m */,
 				00E51D2DFE8AAEA611C9CC38 /* NSDate-OFExtensions.h */,
@@ -1619,8 +1679,6 @@
 				A25B32530E3519AC00072E39 /* NSNumber-OFExtensions-CGTypes.m */,
 				00E51D3AFE8AAEA611C9CC38 /* NSNumber-OFExtensions.h */,
 				00E51D1DFE8AAEA611C9CC38 /* NSNumber-OFExtensions.m */,
-				347DB93B0D86509200338653 /* NSObject-OFAppleScriptExtensions.h */,
-				347DB93C0D86509200338653 /* NSObject-OFAppleScriptExtensions.m */,
 				00E51D3BFE8AAEA611C9CC38 /* NSObject-OFExtensions.h */,
 				00E51D1EFE8AAEA611C9CC38 /* NSObject-OFExtensions.m */,
 				00E51D3CFE8AAEA611C9CC38 /* NSProcessInfo-OFExtensions.h */,
@@ -1712,6 +1770,7 @@
 				345069110D747ED4004B40C2 /* OFCrashOnExceptionTest */,
 				343B36341034F68F0006290A /* OFRandomRepeatTest */,
 				344D08BA1190D47300264D89 /* libOmniFoundation.a */,
+				340115D411E515DB0016ADB3 /* libOmniFoundationTouchTests.a */,
 			);
 			name = Products;
 			sourceTree = "<group>";
@@ -2016,6 +2075,8 @@
 				6C4635F70B38956800635C03 /* OFScriptHelpers.h */,
 				6C4635F80B38956800635C03 /* OFScriptHelpers.m */,
 				34A71C3F0663D4F40097A113 /* NSObjectSpecifier-OFFixes.m */,
+				347DB93B0D86509200338653 /* NSObject-OFAppleScriptExtensions.h */,
+				347DB93C0D86509200338653 /* NSObject-OFAppleScriptExtensions.m */,
 				34B4392C0AED91F8002FB0E1 /* NSScriptCommand-OFExtensions.h */,
 				34B4392D0AED91F8002FB0E1 /* NSScriptCommand-OFExtensions.m */,
 				3431F4F20CD24BBE000D6E70 /* NSScriptObjectSpecifier-OFExtensions.h */,
@@ -2099,6 +2160,7 @@
 				3433588F06415A4C00EEBA57 /* OFCompressionTest.m */,
 				A22C597E0BA88349005F177C /* OFDataTest.m */,
 				8B8DB053039416A313C564E8 /* OFDateTestCase.m */,
+				34562D6211AC2E78005F186D /* OFDateFormatConversionTests.m */,
 				34B051960B2750400095EA0A /* OFDateXMLTests.m */,
 				8B35FEB803943EBF13FD4E88 /* OFDateTestCase.tests */,
 				0153B4BBFF856A08C697A10E /* OFDedicatedThreadSchedulerTest.m */,
@@ -2126,6 +2188,7 @@
 				34F4C0F1078F065E00E8899E /* OFVersionNumberTests.m */,
 				3475FBD10D747F550050931A /* OFCrashOnExceptionTest.m */,
 				343B363E1034F6C40006290A /* OFRandomRepeatTest.m */,
+				342535A9128CB9AD009EFAC0 /* OFGeometryTests.m */,
 				A2BEE38705AB534E0097A146 /* XML */,
 			);
 			path = Tests;
@@ -2181,7 +2244,11 @@
 				344D0A891190DB4700264D89 /* OFErrors.m */,
 				A28C00260E25A52700832A54 /* OmniFoundation_Prefix.h */,
 				BF0E642806309CBE0097A147 /* Info.plist */,
+				16ACF158FFC40A50C697A14E /* OmniFoundation.strings */,
+				34920C7B0D58D2A0001CBD3D /* DateProcessing.strings */,
 				34A1594705641CC70097A113 /* OmniFoundation.order */,
+				34AE03CC12652796008B6FAF /* OFNetReachability.h */,
+				34AE03CD12652796008B6FAF /* OFNetReachability.m */,
 				0C8017CEFEE33D48C697A14E /* General Classes */,
 				3D990C76FF365ADAC697A146 /* General Functions */,
 				00E51C86FE8AAEA611C9CC38 /* DataStructures */,
@@ -2254,6 +2321,14 @@
 /* End PBXGroup section */
 
 /* Begin PBXHeadersBuildPhase section */
+		340115D011E515DB0016ADB3 /* Headers */ = {
+			isa = PBXHeadersBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				349D7D8F11E54747005B8C5D /* OFTestCase.h in Headers */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 		344D08B61190D47300264D89 /* Headers */ = {
 			isa = PBXHeadersBuildPhase;
 			buildActionMask = 2147483647;
@@ -2334,6 +2409,17 @@
 				344D09DE1190D6CD00264D89 /* OFXMLString.h in Headers */,
 				344D09E01190D6D500264D89 /* OFXMLUnparsedElement.h in Headers */,
 				344D09E21190D6D700264D89 /* OFXMLWhitespaceBehavior.h in Headers */,
+				34562BE911AB1278005F186D /* OFDateFormatConversion.h in Headers */,
+				347F624F11D5323600025DAE /* NSFileManager-OFTemporaryPath.h in Headers */,
+				3465C66F11DBA33F0060F19E /* OFAlias.h in Headers */,
+				34E8675E11DBDDBB004CF9CC /* NSAttributedString-OFExtensions.h in Headers */,
+				34AE03CE12652796008B6FAF /* OFNetReachability.h in Headers */,
+				348C2C1C128C66E000E773FD /* OmniFoundation.h in Headers */,
+				34FB803D12B6E3E4004644E1 /* OFSimpleLock-i386.h in Headers */,
+				34FB803E12B6E3E7004644E1 /* OFSimpleLock.h in Headers */,
+				A2CF1A5112D512BC00B705E7 /* CFPropertyList-OFExtensions.h in Headers */,
+				3472CB4E12E3BF1B00F646AE /* NSData-OFSignature.h in Headers */,
+				3472CB6912E3BFBD00F646AE /* CFData-OFExtensions.h in Headers */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -2540,6 +2626,9 @@
 				34E07ED1116A4D170021863D /* OFSaveType.h in Headers */,
 				3443156C1177777E001DEF99 /* OFFileWrapper.h in Headers */,
 				349CCB0E118F3BCC0069017B /* OFEnumNameTable-OFXMLArchiving.h in Headers */,
+				34562BF411AB13EE005F186D /* OFDateFormatConversion.h in Headers */,
+				34AE03D012652796008B6FAF /* OFNetReachability.h in Headers */,
+				3472CB5012E3BF1B00F646AE /* NSData-OFSignature.h in Headers */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -2582,6 +2671,24 @@
 /* End PBXHeadersBuildPhase section */
 
 /* Begin PBXNativeTarget section */
+		340115D311E515DB0016ADB3 /* OmniFoundationTouchTests */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 340115E811E516040016ADB3 /* Build configuration list for PBXNativeTarget "OmniFoundationTouchTests" */;
+			buildPhases = (
+				340115D011E515DB0016ADB3 /* Headers */,
+				340115D111E515DB0016ADB3 /* Sources */,
+				340115D211E515DB0016ADB3 /* Frameworks */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+				340115E311E516020016ADB3 /* PBXTargetDependency */,
+			);
+			name = OmniFoundationTouchTests;
+			productName = OmniFoundationTouchTests;
+			productReference = 340115D411E515DB0016ADB3 /* libOmniFoundationTouchTests.a */;
+			productType = "com.apple.product-type.library.static";
+		};
 		343B36331034F68F0006290A /* OFRandomRepeatTest */ = {
 			isa = PBXNativeTarget;
 			buildConfigurationList = 343B363A1034F6940006290A /* Build configuration list for PBXNativeTarget "OFRandomRepeatTest" */;
@@ -2771,6 +2878,7 @@
 			targets = (
 				4A4E05FE08AA72B10098FF0F /* OmniFoundation */,
 				344D08B91190D47300264D89 /* OmniFoundationTouch */,
+				340115D311E515DB0016ADB3 /* OmniFoundationTouchTests */,
 				4A4E075408AA72B10098FF0F /* Tests */,
 				4A4E07A808AA72B10098FF0F /* OFUnitTests */,
 				4A4E076508AA72B10098FF0F /* OFSimpleLockTest */,
@@ -2788,8 +2896,10 @@
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				4A4E06A808AA72B10098FF0F /* OmniFoundation.strings in Resources */,
 				4A4E06A908AA72B10098FF0F /* Language.strings in Resources */,
 				4A4E06AA08AA72B10098FF0F /* EnglishToISO.strings in Resources */,
+				34920C7D0D58D2A0001CBD3D /* DateProcessing.strings in Resources */,
 				345886331035C727006E712F /* SFMT-LICENSE.txt in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
@@ -2839,12 +2949,20 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 			shellPath = /bin/sh;
-			shellScript = "../../Scripts/BuildStringsFromTarget\n";
+			shellScript = "../../Scripts/BuildStringsFromTarget OmniFoundation\n";
 			showEnvVarsInLog = 0;
 		};
 /* End PBXShellScriptBuildPhase section */
 
 /* Begin PBXSourcesBuildPhase section */
+		340115D111E515DB0016ADB3 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				349D7D8E11E54747005B8C5D /* OFTestCase.m in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 		343B36311034F68F0006290A /* Sources */ = {
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
@@ -2926,6 +3044,14 @@
 				344D09E11190D6D600264D89 /* OFXMLUnparsedElement.m in Sources */,
 				344D09E31190D6D800264D89 /* OFXMLWhitespaceBehavior.m in Sources */,
 				344D0A8A1190DB4700264D89 /* OFErrors.m in Sources */,
+				34562BEA11AB1278005F186D /* OFDateFormatConversion.m in Sources */,
+				347F625011D5323700025DAE /* NSFileManager-OFTemporaryPath.m in Sources */,
+				3465C66E11DBA33F0060F19E /* OFAlias.m in Sources */,
+				34E8675D11DBDDBA004CF9CC /* NSAttributedString-OFExtensions.m in Sources */,
+				34AE03CF12652796008B6FAF /* OFNetReachability.m in Sources */,
+				A2CF1A5212D512BD00B705E7 /* CFPropertyList-OFExtensions.m in Sources */,
+				3472CB4F12E3BF1B00F646AE /* NSData-OFSignature.m in Sources */,
+				3472CB6A12E3BFBE00F646AE /* CFData-OFExtensions.m in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -3127,6 +3253,9 @@
 				3443156D1177777E001DEF99 /* OFFileWrapper.m in Sources */,
 				349CCB0F118F3BCC0069017B /* OFEnumNameTable-OFXMLArchiving.m in Sources */,
 				344D0AAA1190DDE400264D89 /* OFErrors.m in Sources */,
+				34562BF311AB13EE005F186D /* OFDateFormatConversion.m in Sources */,
+				34AE03D112652796008B6FAF /* OFNetReachability.m in Sources */,
+				3472CB5112E3BF1B00F646AE /* NSData-OFSignature.m in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -3194,6 +3323,8 @@
 				A2FE46650E50C35300977722 /* OFLowerCaseTest.m in Sources */,
 				341714FE0F783BB20062895C /* OFXMLReaderTests.m in Sources */,
 				A22D9877101E513F005FF4FF /* OFXMLSignatureTests.m in Sources */,
+				34562D6311AC2E78005F186D /* OFDateFormatConversionTests.m in Sources */,
+				342535AE128CBB7A009EFAC0 /* OFGeometryTests.m in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -3208,6 +3339,11 @@
 /* End PBXSourcesBuildPhase section */
 
 /* Begin PBXTargetDependency section */
+		340115E311E516020016ADB3 /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = 344D08B91190D47300264D89 /* OmniFoundationTouch */;
+			targetProxy = 340115E211E516020016ADB3 /* PBXContainerItemProxy */;
+		};
 		343B36421034F7170006290A /* PBXTargetDependency */ = {
 			isa = PBXTargetDependency;
 			target = 4A4E05FE08AA72B10098FF0F /* OmniFoundation */;
@@ -3265,7 +3401,62 @@
 		};
 /* End PBXTargetDependency section */
 
+/* Begin PBXVariantGroup section */
+		16ACF158FFC40A50C697A14E /* OmniFoundation.strings */ = {
+			isa = PBXVariantGroup;
+			children = (
+				16ACF159FFC40A50C697A14E /* English */,
+			);
+			name = OmniFoundation.strings;
+			sourceTree = "<group>";
+		};
+		34920C7B0D58D2A0001CBD3D /* DateProcessing.strings */ = {
+			isa = PBXVariantGroup;
+			children = (
+				34920C7C0D58D2A0001CBD3D /* English */,
+			);
+			name = DateProcessing.strings;
+			sourceTree = "<group>";
+		};
+/* End PBXVariantGroup section */
+
 /* Begin XCBuildConfiguration section */
+		340115DF11E515DB0016ADB3 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			baseConfigurationReference = 344D08D01190D48A00264D89 /* Touch-Library-Debug.xcconfig */;
+			buildSettings = {
+				FRAMEWORK_SEARCH_PATHS = (
+					"$(DEVELOPER_DIR)/Library/Frameworks",
+					"$(value)",
+				);
+				PRODUCT_NAME = OmniFoundationTouchTests;
+			};
+			name = Debug;
+		};
+		340115E011E515DB0016ADB3 /* Release */ = {
+			isa = XCBuildConfiguration;
+			baseConfigurationReference = 344D08D11190D48A00264D89 /* Touch-Library-Release.xcconfig */;
+			buildSettings = {
+				FRAMEWORK_SEARCH_PATHS = (
+					"$(DEVELOPER_DIR)/Library/Frameworks",
+					"$(value)",
+				);
+				PRODUCT_NAME = OmniFoundationTouchTests;
+			};
+			name = Release;
+		};
+		340115E111E515DB0016ADB3 /* Coverage */ = {
+			isa = XCBuildConfiguration;
+			baseConfigurationReference = 344D08CF1190D48A00264D89 /* Touch-Library-Coverage.xcconfig */;
+			buildSettings = {
+				FRAMEWORK_SEARCH_PATHS = (
+					"$(DEVELOPER_DIR)/Library/Frameworks",
+					"$(value)",
+				);
+				PRODUCT_NAME = OmniFoundationTouchTests;
+			};
+			name = Coverage;
+		};
 		343B36361034F6900006290A /* Debug */ = {
 			isa = XCBuildConfiguration;
 			baseConfigurationReference = 4A4E080D08AA73400098FF0F /* Omni-Tool-Debug.xcconfig */;
@@ -3294,9 +3485,7 @@
 			isa = XCBuildConfiguration;
 			baseConfigurationReference = 344D08D01190D48A00264D89 /* Touch-Library-Debug.xcconfig */;
 			buildSettings = {
-				GCC_DYNAMIC_NO_PIC = NO;
 				PRODUCT_NAME = OmniFoundation;
-				SDKROOT = iphoneos4.3;
 			};
 			name = Debug;
 		};
@@ -3305,7 +3494,6 @@
 			baseConfigurationReference = 344D08D11190D48A00264D89 /* Touch-Library-Release.xcconfig */;
 			buildSettings = {
 				PRODUCT_NAME = OmniFoundation;
-				SDKROOT = iphoneos4.3;
 			};
 			name = Release;
 		};
@@ -3314,7 +3502,6 @@
 			baseConfigurationReference = 344D08CF1190D48A00264D89 /* Touch-Library-Coverage.xcconfig */;
 			buildSettings = {
 				PRODUCT_NAME = OmniFoundation;
-				SDKROOT = iphoneos4.3;
 			};
 			name = Coverage;
 		};
@@ -3640,15 +3827,12 @@
 			isa = XCBuildConfiguration;
 			baseConfigurationReference = 4AB8F38B08AD0CA100DBB061 /* Omni-Global-Debug.xcconfig */;
 			buildSettings = {
-				GCC_ENABLE_OBJC_GC = supported;
 				"GCC_ENABLE_OBJC_GC[sdk=iphoneos*][arch=*]" = unsupported;
 				"GCC_ENABLE_OBJC_GC[sdk=macosx*][arch=*]" = supported;
 				HEADER_SEARCH_PATHS = (
 					"$(value)",
 					/usr/include/libxml2,
 				);
-				IPHONEOS_DEPLOYMENT_TARGET = 3.2;
-				SDKROOT = iphoneos4.3;
 			};
 			name = Debug;
 		};
@@ -3656,15 +3840,12 @@
 			isa = XCBuildConfiguration;
 			baseConfigurationReference = 4AB8F38C08AD0CA100DBB061 /* Omni-Global-Release.xcconfig */;
 			buildSettings = {
-				GCC_ENABLE_OBJC_GC = supported;
 				"GCC_ENABLE_OBJC_GC[sdk=iphoneos*][arch=*]" = unsupported;
 				"GCC_ENABLE_OBJC_GC[sdk=macosx*][arch=*]" = supported;
 				HEADER_SEARCH_PATHS = (
 					"$(value)",
 					/usr/include/libxml2,
 				);
-				IPHONEOS_DEPLOYMENT_TARGET = 3.2;
-				SDKROOT = iphoneos4.3;
 			};
 			name = Release;
 		};
@@ -3672,21 +3853,28 @@
 			isa = XCBuildConfiguration;
 			baseConfigurationReference = 4AB8F38A08AD0CA100DBB061 /* Omni-Global-Coverage.xcconfig */;
 			buildSettings = {
-				GCC_ENABLE_OBJC_GC = supported;
 				"GCC_ENABLE_OBJC_GC[sdk=iphoneos*][arch=*]" = unsupported;
 				"GCC_ENABLE_OBJC_GC[sdk=macosx*][arch=*]" = supported;
 				HEADER_SEARCH_PATHS = (
 					"$(value)",
 					/usr/include/libxml2,
 				);
-				IPHONEOS_DEPLOYMENT_TARGET = 3.2;
-				SDKROOT = iphoneos4.3;
 			};
 			name = Coverage;
 		};
 /* End XCBuildConfiguration section */
 
 /* Begin XCConfigurationList section */
+		340115E811E516040016ADB3 /* Build configuration list for PBXNativeTarget "OmniFoundationTouchTests" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				340115DF11E515DB0016ADB3 /* Debug */,
+				340115E011E515DB0016ADB3 /* Release */,
+				340115E111E515DB0016ADB3 /* Coverage */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Debug;
+		};
 		343B363A1034F6940006290A /* Build configuration list for PBXNativeTarget "OFRandomRepeatTest" */ = {
 			isa = XCConfigurationList;
 			buildConfigurations = (
