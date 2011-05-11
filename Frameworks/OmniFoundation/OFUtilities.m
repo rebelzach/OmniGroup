@@ -482,7 +482,7 @@ id OFCreatePlistFor4CC(uint32_t v)
         return [[NSData alloc] initWithBytes:buf.c length:4];
     else {
         CFStringRef s = CFStringCreateWithBytes(kCFAllocatorDefault, buf.c, 4, kCFStringEncodingMacRoman, FALSE);
-        return (id)s;
+        return NSMakeCollectable(s);
     }
 }
 

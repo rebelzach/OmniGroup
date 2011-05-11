@@ -29,4 +29,5 @@
 - (void)showOnlineHelp:(id)sender;
 - (void)sendFeedback:(id)sender;
 - (void)showReleaseNotes:(id)sender;
+- (void)runTests:(id)sender;
 @end

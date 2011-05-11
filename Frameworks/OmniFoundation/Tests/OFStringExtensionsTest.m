@@ -141,10 +141,10 @@ RCS_ID("$Id$");
     char *buf;
     
     buf = OFShortASCIIDecimalStringFromDouble(d, OF_FLT_DIGITS_E, NO, YES);
-    t1 = (NSString *)CFStringCreateWithCStringNoCopy(kCFAllocatorDefault, buf, kCFStringEncodingASCII, kCFAllocatorMalloc);
+    t1 = NSMakeCollectable(CFStringCreateWithCStringNoCopy(kCFAllocatorDefault, buf, kCFStringEncodingASCII, kCFAllocatorMalloc));
     
     buf = OFShortASCIIDecimalStringFromDouble(d, OF_FLT_DIGITS_E, YES, YES);
-    t2 = (NSString *)CFStringCreateWithCStringNoCopy(kCFAllocatorDefault, buf, kCFStringEncodingASCII, kCFAllocatorMalloc);
+    t2 = NSMakeCollectable(CFStringCreateWithCStringNoCopy(kCFAllocatorDefault, buf, kCFStringEncodingASCII, kCFAllocatorMalloc));
     
     shouldBeEqual(t0, decimalized);
     shouldBeEqual(t1, decimalized);
@@ -160,7 +160,7 @@ RCS_ID("$Id$");
     
     if ([decimalized hasPrefix:@"0."]) {
         buf = OFShortASCIIDecimalStringFromDouble(d, OF_FLT_DIGITS_E, NO, NO);
-        t1 = (NSString *)CFStringCreateWithCStringNoCopy(kCFAllocatorDefault, buf, kCFStringEncodingASCII, kCFAllocatorMalloc);
+        t1 = NSMakeCollectable(CFStringCreateWithCStringNoCopy(kCFAllocatorDefault, buf, kCFStringEncodingASCII, kCFAllocatorMalloc));
         shouldBeEqual(t1, [decimalized substringFromIndex:1]);
         [t1 release];
     }

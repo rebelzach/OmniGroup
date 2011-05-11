@@ -22,6 +22,8 @@ RCS_ID("$Id$")
     static NSDateFormatter *dateFormatter = nil;
     if (dateFormatter == nil) {
         dateFormatter = [[NSDateFormatter alloc] init];
+        NSLocale* us_en_locale = [[[NSLocale alloc] initWithLocaleIdentifier:@"en_US"] autorelease];
+        [dateFormatter setLocale:us_en_locale];
         [dateFormatter setTimeZone:[NSTimeZone timeZoneForSecondsFromGMT:0]];
         [dateFormatter setDateFormat:@"EEE, dd MMM yyyy HH:mm:ss 'GMT'"];
     }
@@ -412,6 +414,7 @@ static NSString *_xmlStyleDateStringWithFormat(NSDate *self, SEL _cmd, NSString 
     static NSCalendar *cachedCalendar = nil;
     if (!cachedCalendar) {
         cachedCalendar = [[NSCalendar currentCalendar] retain];
+        [cachedCalendar setTimeZone:[NSTimeZone timeZoneWithAbbreviation:@"UTC"]];
         OBASSERT(cachedCalendar);
     }
     

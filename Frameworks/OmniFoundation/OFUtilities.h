@@ -1,4 +1,4 @@
-// Copyright 1997-2005, 2007-2010 Omni Development, Inc.  All rights reserved.
+// Copyright 1997-2005, 2007-2011 Omni Development, Inc.  All rights reserved.
 //
 // This software may only be used and reproduced according to the
 // terms in the file OmniSourceLicense.html, which should be
@@ -53,7 +53,9 @@ extern SEL OFRegisterSelectorIfAbsent(const char *selName);
 
 #define OFForEachInArray(arrayExpression, valueType, valueVar, loopBody) { NSArray * valueVar ## _array = (arrayExpression); NSUInteger valueVar ## _count , valueVar ## _index; valueVar ## _count = [( valueVar ## _array ) count]; for( valueVar ## _index = 0; valueVar ## _index < valueVar ## _count ; valueVar ## _index ++ ) { valueType valueVar = [( valueVar ## _array ) objectAtIndex:( valueVar ## _index )]; loopBody ; } }
 
+#if !defined(TARGET_OS_IPHONE) || !TARGET_OS_IPHONE
 extern uint32_t OFLocalIPv4Address(void);
+#endif
 
 // A string which uniquely identifies this computer. Currently, it's the MAC address for the built-in ethernet port, but that or the underlying implementation could change.
 extern NSString *OFUniqueMachineIdentifier(void);
@@ -76,7 +78,7 @@ extern char *OFFormatFCC(uint32_t fcc, char fccString[13]);
 BOOL OFGet4CCFromPlist(id pl, uint32_t *fourcc);
 
 // Creates a property-list representation of the given FourCharCode. Not necessarily compatible with UTGetOSTypeFromString(), because it might not return an NSString.
-id OFCreatePlistFor4CC(uint32_t fourcc);
+id OFCreatePlistFor4CC(uint32_t fourcc) NS_RETURNS_RETAINED;
 
 // Converts between CFNumberType and numeric C types represented using @encode. Returns 0 or NULL if there's no exact equivalent (e.g. most of the unsigned integer types).
 CFNumberType OFCFNumberTypeForObjCType(const char *objCType) __attribute__ ((const));

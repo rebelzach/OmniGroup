@@ -1,4 +1,4 @@
-// Copyright 2010 The Omni Group.  All rights reserved.
+// Copyright 2010-2011 The Omni Group. All rights reserved.
 //
 // This software may only be used and reproduced according to the
 // terms in the file OmniSourceLicense.html, which should be
@@ -10,7 +10,7 @@
 #import <OmniUI/UIView-OUIExtensions.h>
 #import <OmniUI/OUILoadedImage.h>
 #ifdef OMNI_ASSERTIONS_ON
-#import <OmniUI/OUIDocumentPickerView.h>
+#import <OmniUI/OUIDocumentPickerScrollView.h>
 #endif
 #import <OmniQuartz/OQDrawing.h>
 
@@ -22,7 +22,7 @@ RCS_ID("$Id$");
 
 #define SHOW_SELECTION 1
 
-#if 0 && defined(DEBUG)
+#ifdef DEBUG_kc0
     #define PREVIEW_DEBUG(format, ...) NSLog(@"PREVIEW VIEW: %p " format, self, ## __VA_ARGS__)
 #else
     #define PREVIEW_DEBUG(format, ...)
@@ -95,7 +95,6 @@ static UIImage *PlaceholderPreviewImage = nil;
 static id _commonInit(OUIDocumentProxyView *self)
 {
     CALayer *layer = self.layer;
-    layer.geometryFlipped = YES;
     layer.edgeAntialiasingMask = 0; // See drawing code below.
     layer.needsDisplayOnBoundsChange = YES;
     
@@ -159,7 +158,7 @@ static id _commonInit(OUIDocumentProxyView *self)
     [_preview release];
     _preview = [preview retain];
     
-    PREVIEW_DEBUG(@"_preview now %@, size %@, image %@, layer %@", [(id)_preview shortDescription], NSStringFromCGSize(_preview.originalViewSize), _preview.cachedImage, self.layer);
+    PREVIEW_DEBUG(@"_preview now %@, image %@, layer %@", [(id)_preview shortDescription], _preview.cachedImage, self.layer);
     
     // Our selection layer gets its rect based on the preview
     [self setNeedsLayout];
@@ -179,6 +178,11 @@ static CGRect _paperRect(id <OUIDocumentPreview> preview, CGRect bounds)
     return preview ? preview.untransformedPageRect : bounds;
 }
 
+- (NSArray *)shadowEdgeViews;
+{
+    return _shadowEdgeViews;
+}
+
 #pragma mark -
 #pragma mark UIView subclass
 
@@ -192,7 +196,7 @@ static CGRect _paperRect(id <OUIDocumentPreview> preview, CGRect bounds)
 
 - (void)layoutSubviews;
 {
-    OUIViewLayoutShadowEdges(self, _shadowEdgeViews, NO/*flip*/);
+    OUIViewLayoutShadowEdges(self, _shadowEdgeViews, YES/*flip*/);
 
 #if SHOW_SELECTION
     _selectionGrayView.frame = self.bounds;
@@ -339,7 +343,7 @@ void OUIDocumentProxyDrawPreview(CGContextRef ctx, OUIDocumentPDFPreview *pdfPre
         if ([_preview isKindOfClass:[OUIDocumentImagePreview class]])
             layer.contentsGravity = kCAGravityCenter;
         else
-            layer.contentsGravity = kCAGravityResizeAspectFill;
+            layer.contentsGravity = kCAGravityResize;
         
         layer.contents = (id)imageRef;
     }

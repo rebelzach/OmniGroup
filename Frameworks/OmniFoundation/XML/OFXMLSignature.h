@@ -9,6 +9,7 @@
 
 #import <OmniFoundation/OFObject.h>
 #import <OmniFoundation/OFCDSAUtilities.h>
+#import <OmniBase/objc.h>
 
 #include <libxml/tree.h>
 
@@ -86,8 +87,8 @@ enum OFXMLSignatureOperation {
 - (BOOL)isLocalReferenceAtIndex:(NSUInteger)nodeIndex;
 
 /* Subclass opportunuties */
-- (id <OFCSSMDigestionContext, NSObject>)newVerificationContextForAlgorithm:(const xmlChar *)signatureAlgorithm method:(xmlNode *)signatureMethod keyInfo:(xmlNode *)keyInfo operation:(enum OFXMLSignatureOperation)op error:(NSError **)outError NS_RETURNS_RETAINED;
-- (id <OFCSSMDigestionContext, NSObject>)newDigestContextForMethod:(xmlNode *)digestMethodNode error:(NSError **)outError;
+- (id <OFDigestionContext, NSObject>)newVerificationContextForAlgorithm:(const xmlChar *)signatureAlgorithm method:(xmlNode *)signatureMethod keyInfo:(xmlNode *)keyInfo operation:(enum OFXMLSignatureOperation)op error:(NSError **)outError NS_RETURNS_RETAINED;
+- (id <OFDigestionContext, NSObject>)newDigestContextForMethod:(xmlNode *)digestMethodNode error:(NSError **)outError;
 - (NSData *)signatureForStoredValue:(NSData *)raw algorithm:(const xmlChar *)signatureAlgorithm method:(xmlNode *)signatureMethod error:(NSError **)outError;
 - (NSData *)storedValueForSignature:(NSData *)signatureValue algorithm:(const xmlChar *)signatureAlgorithm method:(xmlNode *)signatureMethod error:(NSError **)outError;
 - (OFCDSAModule *)cspForKey:(OFCSSMKey *)aKey;
@@ -107,8 +108,8 @@ NSData *OFLibXMLNodeBase64Content(const xmlNode *node);
 
 /* ASN.1 DER construction utility routines */
 NSData *OFASN1IntegerFromBignum(NSData *base256Number);
-NSMutableData *OFASN1CreateForTag(uint8_t tag, NSUInteger byteCount);
-NSMutableData *OFASN1CreateForSequence(NSData *item, ...)  __attribute__((sentinel));
+NSMutableData *OFASN1CreateForTag(uint8_t tag, NSUInteger byteCount) NS_RETURNS_RETAINED;
+NSMutableData *OFASN1CreateForSequence(NSData *item, ...)  __attribute__((sentinel)) NS_RETURNS_RETAINED;
 NSUInteger OFASN1UnwrapSequence(NSData *seq, NSError **outError);
 NSData *OFASN1UnwrapUnsignedInteger(NSData *buf, NSUInteger *inOutWhere, NSError **outError);
 NSString *OFASN1DescribeOID(const unsigned char *bytes, size_t len); // Textual description for debugging

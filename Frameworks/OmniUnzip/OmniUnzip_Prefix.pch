@@ -8,6 +8,6 @@
 
     #import <OmniBase/OmniBase.h>
     #import <OmniFoundation/NSString-OFSimpleMatching.h>
-
+    #import <OmniFoundation/OFFileWrapper.h>
     #import <CoreFoundation/CFError.h>
 #endif

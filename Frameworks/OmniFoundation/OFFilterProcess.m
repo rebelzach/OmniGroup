@@ -44,7 +44,7 @@ static void keventRunLoopCallback(CFFileDescriptorRef f, CFOptionFlags callBackT
 static void pollTimerRunLoopCallback(CFRunLoopTimerRef timer, void *info);
 
 static char ** __strong computeToolEnvironment(NSDictionary *envp, NSDictionary *setenv, NSString *ensurePath);
-static void freeToolEnvironment(char **envp);
+static void freeToolEnvironment(char ** __strong envp);
 static char *makeEnvEntry(id key, size_t *sepindex, id value);
 static char *pathStringIncludingDirectory(const char *currentPath, const char *pathdir, const char *sep);
 
@@ -227,11 +227,11 @@ static void logdescriptors(const char *where)
         posix_spawn_file_actions_t fileActions;
         posix_spawnattr_t spawnAttributes, *attrs;
         
-        posix_spawnattr_init(&spawnAttributes);
         posix_spawn_file_actions_init(&fileActions);
         attrs = NULL;
 
         if (newProcessGroup) {
+            posix_spawnattr_init(&spawnAttributes);
             posix_spawnattr_setflags(&spawnAttributes, POSIX_SPAWN_SETPGROUP);
             attrs = &spawnAttributes;
         }
@@ -267,12 +267,19 @@ static void logdescriptors(const char *where)
         
         int spawned;
         
-        spawned = posix_spawn(&child, toolPath, &fileActions, attrs, (char * const *)toolParameters, toolEnvironment? toolEnvironment : *_NSGetEnviron());
+        spawned = posix_spawn(&child, toolPath, &fileActions, attrs, (char * const *)toolParameters, (char * const *)(toolEnvironment? toolEnvironment : *_NSGetEnviron()));
         if (spawned != 0) {
             NSString *description = [NSString stringWithFormat:NSLocalizedStringFromTableInBundle(@"Could not fork '%@'", @"OmniFoundation", OMNI_BUNDLE, @"error description - unable to start a child process using the spawn syscall"), commandPath];
             OBErrorWithErrno(&errorBuf, OMNI_ERRNO(), "posix_spawn()", nil, description);
             
             child = -1; // imitate fork()'s error return behavior
+        }
+        
+     	posix_spawn_file_actions_destroy(&fileActions);
+        
+        if (attrs != NULL) {
+            // We only call posix_spawnattr_init() if we need it, so only call _destroy() if we needed it.
+            posix_spawnattr_destroy(attrs);
         }
     } else {
         /* Fork off a child process in the traditional way */
@@ -1255,11 +1262,11 @@ static char ** __strong computeToolEnvironment(NSDictionary *replace_env, NSDict
     }
 }
 
-static void freeToolEnvironment(char **envp)
+static void freeToolEnvironment(char ** __strong envp)
 {
     if (!envp)
         return;
-    for(char **envcursor = envp; *envcursor; envcursor ++)
+    for(char ** __strong envcursor = envp; *envcursor; envcursor ++)
         free(*envcursor);
     OBFreeScanned(envp);
 }

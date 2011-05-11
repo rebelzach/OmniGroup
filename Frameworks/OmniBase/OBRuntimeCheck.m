@@ -158,7 +158,7 @@ static NSString *describeMethod(Method m, BOOL *nonSystem)
             [buf appendString:path];
         }
         
-        if (![path hasPrefix:@"/System/"] && ![path hasPrefix:@"/Library/"] && ![path hasPrefix:@"/usr/lib/"])
+        if (![path hasPrefix:@"/System/"] && ![path hasPrefix:@"/Library/"] && ![path hasPrefix:@"/usr/lib/"] && ![path hasSuffix:@"FBAccess"])
             *nonSystem = YES;
     }
     
@@ -326,14 +326,14 @@ static void _checkSignaturesVsSuperclass(Class cls, Method *methods, unsigned in
                 NSString *methodInfo = describeMethod(method, &nonSystem);
                 NSString *superMethodInfo = describeMethod(superMethod, &nonSystem);
                 if (nonSystem || OBReportWarningsInSystemLibraries) {
-                    const char *normalizedSig = _copyNormalizeMethodSignature(types);
-                    const char *normalizedSigSuper = _copyNormalizeMethodSignature(superTypes);
+                    char *normalizedSig = _copyNormalizeMethodSignature(types);
+                    char *normalizedSigSuper = _copyNormalizeMethodSignature(superTypes);
                     NSLog(@"Method %s has conflicting type signatures between class and its superclass:\n\tsignature %s for class %s has %@\n\tsignature %s for class %s has %@",
                           sel_getName(sel),
                           normalizedSig, class_getName(cls), methodInfo,
                           normalizedSigSuper, class_getName(superClass), superMethodInfo);
-                    free((void *)normalizedSig);
-                    free((void *)normalizedSigSuper);
+                    free(normalizedSig);
+                    free(normalizedSigSuper);
                     MethodSignatureConflictCount++;
                 } else {
                     SuppressedConflictCount++;
@@ -341,8 +341,8 @@ static void _checkSignaturesVsSuperclass(Class cls, Method *methods, unsigned in
             }
             
             if (freeSignatures) {
-                free((char *)types);
-                free((char *)superTypes);
+                free((void *)types);
+                free((void *)superTypes);
             }
         }
     }
@@ -369,11 +369,25 @@ static void _checkMethodInClassVsMethodInProtocol(Class cls, Protocol *protocol,
     
     const char *types = method_getTypeEncoding(m);
     if (!_methodSignaturesCompatible(cls, sel, types, desc.types)) {
-        NSLog(@"Method %s has type signatures conflicting with adopted protocol\n\tnormalized %s original %s(%s)\n\tnormalized %s original %s(%s)!",
-	      sel_getName(sel),
-	      _copyNormalizeMethodSignature(types), types, class_getName(cls),
-	      _copyNormalizeMethodSignature(desc.types), desc.types, protocol_getName(protocol));
-        MethodSignatureConflictCount++;
+        BOOL nonSystem = NO;
+        NSString *methodInfo = describeMethod(m, &nonSystem);
+        
+        if (nonSystem || OBReportWarningsInSystemLibraries) {
+            char *normalizedSig = _copyNormalizeMethodSignature(types);
+            char *normalizedSigProtocol = _copyNormalizeMethodSignature(desc.types);
+            
+            NSLog(@"Method %s has conflicting type signatures between class and its adopted protocol:\n\tsignature %s for class %s has %@\n\tsignature %s for protocol %s",
+                  sel_getName(sel),
+                  normalizedSig, class_getName(cls), methodInfo,
+                  normalizedSigProtocol, protocol_getName(protocol));
+            
+            free(normalizedSig);
+            free(normalizedSigProtocol);
+        
+            MethodSignatureConflictCount++;
+        } else {
+            SuppressedConflictCount++;
+        }
     }
 }
 
@@ -445,6 +459,16 @@ static void _validateMethodSignatures(void)
     for (classIndex = 0; classIndex < classCount; classIndex++) {
         Class cls = classes[classIndex];
         
+        /* Some classes (that aren't our problem) asplode when they try to dynamically create getters/setters. */
+        const char *clsName = class_getName(cls);
+        if (strncmp(clsName, "NS", 2) == 0 ||
+            strncmp(clsName, "_NS", 3) == 0 ||
+            strncmp(clsName, "__NS", 4) == 0 ||
+            strncmp(clsName, "__CF", 4) == 0) {
+            /* In particular, _NS[View]Animator chokes in this case. But we don't really need to check any _NS classes. */
+            continue;
+        }
+            
         unsigned int methodIndex = 0;
         Method *methods = class_copyMethodList(cls, &methodIndex);
         _checkSignaturesVsSuperclass(cls, methods, methodIndex); // instance methods
@@ -712,7 +736,7 @@ static void OBPerformRuntimeChecksOnLoad(void)
     if (getenv("OBPerformRuntimeChecksOnLoad")) {
         NSAutoreleasePool *pool = [[NSAutoreleasePool alloc] init];
         OBPerformRuntimeChecks();
-        [pool release];
+        [pool drain];
     }
 }
 

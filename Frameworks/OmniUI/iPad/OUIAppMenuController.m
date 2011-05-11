@@ -19,8 +19,13 @@ enum {
     OnlineHelp,
     SendFeedback,
     ReleaseNotes,
-    MenuItemCount,
+    NormalMenuItemCount,
+    
+    //
+    RunTests = NormalMenuItemCount
 } MenuItem;
+
+static NSUInteger MenuItemCount = NormalMenuItemCount;
 
 @interface OUIAppMenuController (/*Private*/)
 - (void)_toggleSampleDocuments:(id)sender;
@@ -28,6 +33,22 @@ enum {
 @end
 
 @implementation OUIAppMenuController
+
++ (void)initialize;
+{
+    OBINITIALIZE;
+    
+    BOOL includedTestsMenu;
+    
+#if defined(DEBUG)
+    includedTestsMenu = YES;
+#else
+    includedTestsMenu = [[NSUserDefaults standardUserDefaults] boolForKey:@"OUIIncludeTestsMenu"];
+#endif
+
+    if (includedTestsMenu && NSClassFromString(@"SenTestSuite"))
+        MenuItemCount++;
+}
 
 - (id)initWithNibName:(NSString *)nibNameOrNil bundle:(NSBundle *)nibBundleOrNil;
 {
@@ -125,7 +146,7 @@ enum {
         }
 #endif
         case OnlineHelp:
-            title = [[NSBundle mainBundle] objectForInfoDictionaryKey:@"OUIHelpBookName"];
+            title = [[NSBundle mainBundle] localizedStringForKey:@"OUIHelpBookName" value:[[NSBundle mainBundle] objectForInfoDictionaryKey:@"OUIHelpBookName"] table:@"InfoPlist"];
             image = [UIImage imageNamed:@"OUIMenuItemHelp.png"];
             OBASSERT(title != nil);
             break;
@@ -137,6 +158,11 @@ enum {
             title = NSLocalizedStringFromTableInBundle(@"Release Notes", @"OmniUI", OMNI_BUNDLE, @"App menu item title");
             image = [UIImage imageNamed:@"OUIMenuItemReleaseNotes.png"];
             break;
+        case RunTests:
+            title = NSLocalizedStringFromTableInBundle(@"Run Tests", @"OmniUI", OMNI_BUNDLE, @"App menu item title");
+            image = [UIImage imageNamed:@"OUIMenuItemRunTests.png"];
+            break;
+            
         default:
             OBASSERT_NOT_REACHED("Unknown menu item row requested");
             return [[[UITableViewCell alloc] initWithFrame:CGRectZero reuseIdentifier:nil] autorelease];
@@ -184,6 +210,9 @@ enum {
             break;
         case ReleaseNotes:
             action = @selector(showReleaseNotes:);
+            break;
+        case RunTests:
+            action = @selector(runTests:);
             break;
         default:
             OBASSERT_NOT_REACHED("Unknown menu item selected");

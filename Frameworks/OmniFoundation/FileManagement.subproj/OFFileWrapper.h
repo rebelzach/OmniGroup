@@ -1,4 +1,4 @@
-// Copyright 2010 Omni Development, Inc.  All rights reserved.
+// Copyright 2010-2011 Omni Development, Inc.  All rights reserved.
 //
 // This software may only be used and reproduced according to the
 // terms in the file OmniSourceLicense.html, which should be
@@ -11,7 +11,7 @@
 #import <Availability.h>
 
 /*
- This is only used on the iPhone/iPad, which doesn't have NSFileWrapper. We have simpler needs on the iPad (no AFP mounts disabling hard linking, etc).
+ This is only used on the iPhone/iPad, which doesn't have NSFileWrapper until iOS 4 (where we still want to support iOS 3.2 for iPad). We have simpler needs on the iPad (no AFP mounts disabling hard linking, etc).
  */
 
 #if defined(TARGET_OS_IPHONE) && TARGET_OS_IPHONE
@@ -20,11 +20,25 @@
     #define OFFILEWRAPPER_ENABLED 0
     #define OFFileWrapper NSFileWrapper // our version is in OmniFoundation for a reason...)
     #import <AppKit/NSFileWrapper.h>
+
+    #define OFFileWrapperReadingOptions NSFileWrapperReadingOptions
+
+    #define OFFileWrapperWritingOptions NSFileWrapperWritingOptions
+    #define OFFileWrapperWritingAtomic NSFileWrapperWritingAtomic
+    #define OFFileWrapperWritingWithNameUpdating NSFileWrapperWritingWithNameUpdating
 #endif
 
 #if OFFILEWRAPPER_ENABLED
 
 typedef NSUInteger OFFileWrapperReadingOptions;
+
+
+enum {
+    OFFileWrapperWritingAtomic = 1 << 0,
+    OFFileWrapperWritingWithNameUpdating = 1 << 1
+};
+
+typedef NSUInteger OFFileWrapperWritingOptions;
 
 @class NSDictionary, NSString, NSData, NSURL, NSError;
 
@@ -40,26 +54,42 @@ typedef NSUInteger OFFileWrapperReadingOptions;
     
     // If a file
     NSData *_contents;
+    
+    // If a symlink
+    NSString *_symbolicLinkDestination;
 }
 
 - (id)initWithURL:(NSURL *)url options:(OFFileWrapperReadingOptions)options error:(NSError **)outError;
 - (id)initDirectoryWithFileWrappers:(NSDictionary *)childrenByPreferredName;
 - (id)initRegularFileWithContents:(NSData *)contents;
 
+- (BOOL)writeToURL:(NSURL *)url options:(OFFileWrapperWritingOptions)options originalContentsURL:(NSURL *)originalContentsURL error:(NSError **)outError;
+
 - (NSDictionary *)fileAttributes;
 
 - (BOOL)isRegularFile;
 - (BOOL)isDirectory;
+- (BOOL)isSymbolicLink;
 
 @property(nonatomic,copy) NSString *filename;
 - (NSData *)regularFileContents;
 - (NSDictionary *)fileWrappers;
+- (NSString *)symbolicLinkDestination;
 
 @property(nonatomic,copy) NSString *preferredFilename;
 
 - (NSString *)addFileWrapper:(OFFileWrapper *)child;
 - (void)removeFileWrapper:(OFFileWrapper *)child;
 - (NSString *)keyForFileWrapper:(OFFileWrapper *)child;
+
+- (BOOL)matchesContentsOfURL:(NSURL *)url;
+
+// Serialization
+- (NSData *)serializedRepresentation; // NOTE: No attempt is made to be data-compatible with NSFileWrapper, just API-compatible
+- (id)initWithSerializedRepresentation:(NSData *)serializedRepresentation;
+
+// Convenience methods
+- (NSString *)addRegularFileWithContents:(NSData *)data preferredFilename:(NSString *)fileName;
 
 @end
 

@@ -1,4 +1,4 @@
-// Copyright 1997-2008, 2010 Omni Development, Inc.  All rights reserved.
+// Copyright 1997-2008, 2010-2011 Omni Development, Inc.  All rights reserved.
 //
 // This software may only be used and reproduced according to the
 // terms in the file OmniSourceLicense.html, which should be
@@ -16,6 +16,7 @@
 #import <OmniFoundation/NSString-OFConversion.h>
 #import <OmniFoundation/NSString-OFURLEncoding.h>
 #import <OmniFoundation/NSString-OFCharacterEnumeration.h>
+#import <OmniBase/objc.h>
 
 #import <Foundation/NSDecimalNumber.h>
 #import <Foundation/NSDate.h> // For NSTimeInterval
@@ -60,11 +61,12 @@ Currently the only way to create strings with deferred bytes/characters is using
 
 - (BOOL)isPercentage;
 
+#if !defined(TARGET_OS_IPHONE) || !TARGET_OS_IPHONE
 + (NSString *)stringWithFourCharCode:(FourCharCode)code;
 - (FourCharCode)fourCharCodeValue;
+#endif
 
 - (NSString *)stringByUppercasingAndUnderscoringCaseChanges;
-- (NSString *)stringByCollapsingWhitespaceAndRemovingSurroundingWhitespace;
 - (NSString *)stringByRemovingWhitespace;
 - (NSString *)stringByRemovingCharactersInOFCharacterSet:(OFCharacterSet *)removeSet;
 - (NSString *)stringByRemovingReturns;
@@ -123,7 +125,7 @@ Currently the only way to create strings with deferred bytes/characters is using
 
 /* Creating an ASCII representation of a floating-point number, without using exponential notation. */
 /* OFCreateDecimalStringFromDouble() formats a double into an NSString (which must be released by the caller, hence the word 'create' in the function name). This function will never return a value in exponential notation: it will always be in integer/decimal notation. If the returned string includes a decimal point, there will always be at least one digit on each side of the decimal point. */
-extern NSString *OFCreateDecimalStringFromDouble(double value);
+extern NSString *OFCreateDecimalStringFromDouble(double value) NS_RETURNS_RETAINED;
 /* OFASCIIDecimalStringFromDouble() returns a malloc()d buffer containing the decimal string, in ASCII. */
 extern char *OFASCIIDecimalStringFromDouble(double value);
 /* OFShortASCIIDecimalStringFromDouble() returns a malloc()d buffer containing the decimal string, in ASCII.

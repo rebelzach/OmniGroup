@@ -16,8 +16,15 @@
     #define OUI_GESTURE_RECOGNIZER_DEBUG 0
 #endif
 
-#if OUI_GESTURE_RECOGNIZER_DEBUG
 @interface UIGestureRecognizer (OUIExtensions)
+
+#if OUI_GESTURE_RECOGNIZER_DEBUG
 + (void)enableStateChangeLogging;
-@end
 #endif
+
+- (UIView *)hitView;
+- (UIView *)nearestViewFromViews:(NSArray *)views relativeToView:(UIView *)comparisionView maximumDistance:(CGFloat)maximumDistance;
+
+
+@end
+

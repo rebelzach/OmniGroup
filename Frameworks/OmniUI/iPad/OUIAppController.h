@@ -20,6 +20,7 @@
 #endif
 
 #define OUI_PRESENT_ERROR(error) [[[OUIAppController controller] class] presentError:(error) file:__FILE__ line:__LINE__]
+#define OUI_PRESENT_ALERT(error) [[[OUIAppController controller] class] presentAlert:(error) file:__FILE__ line:__LINE__]
 
 @interface OUIAppController : OFObject <UIApplicationDelegate, MFMailComposeViewControllerDelegate, OUIDocumentPickerDelegate>
 {
@@ -40,6 +41,7 @@
     NSArray *_editableFileTypes;
     
     UIPopoverController *_possiblyVisiblePopoverController;
+    UIBarButtonItem *_possiblyTappedButtonItem;
 }
 
 + (id)controller;
@@ -51,6 +53,7 @@
 
 + (void)presentError:(NSError *)error;
 + (void)presentError:(NSError *)error file:(const char *)file line:(int)line;
++ (void)presentAlert:(NSError *)error file:(const char *)file line:(int)line;  // 'OK' instead of 'Cancel' for the button title
 
 @property(readonly) UIBarButtonItem *appMenuBarItem;
 
@@ -70,7 +73,8 @@
 // Present all popovers via this API to help avoid popovers having to know about one another to avoid multiple popovers on screen.
 - (BOOL)presentPopover:(UIPopoverController *)popover fromRect:(CGRect)rect inView:(UIView *)view permittedArrowDirections:(UIPopoverArrowDirection)arrowDirections animated:(BOOL)animated;
 - (BOOL)presentPopover:(UIPopoverController *)popover fromBarButtonItem:(UIBarButtonItem *)item permittedArrowDirections:(UIPopoverArrowDirection)arrowDirections animated:(BOOL)animated;
-- (void)dismissPopoverAnimated:(BOOL)animated; // DOES send the 'did' delegate method, unlike the plain UIPopoverController method (see the implementation for reasoning)
+- (void)dismissPopover:(UIPopoverController *)popover animated:(BOOL)animated; // If the popover in question is not visible, does nothing. DOES send the 'did' delegate method, unlike the plain UIPopoverController method (see the implementation for reasoning)
+- (void)dismissPopoverAnimated:(BOOL)animated; // Calls -dismissPopover:animated: with whatever popover is visible
 
 // Special URL handling
 - (BOOL)isSpecialURL:(NSURL *)url;
@@ -78,7 +82,6 @@
 
 // UIApplicationDelegate methods that we implement
 - (void)applicationWillTerminate:(UIApplication *)application;
-
 
 // Subclass responsibility
 @property(readonly) UIViewController *topViewController;

@@ -28,6 +28,5 @@
 - (void)finishedAnimatingContent;
 
 - (CABasicAnimation *)basicAnimationForKey:(NSString *)key;
-- (id <CAAction>)actionForContents;
 
 @end
