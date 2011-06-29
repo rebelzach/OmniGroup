@@ -342,7 +342,7 @@
 		9263FB431379219B0054E572 /* OUICredentials-Device.m in Sources */ = {isa = PBXBuildFile; fileRef = 94074480125F9FA900C4AECB /* OUICredentials-Device.m */; };
 		9263FB451379219D0054E572 /* OUICredentials-Simulator.m in Sources */ = {isa = PBXBuildFile; fileRef = 94074481125F9FA900C4AECB /* OUICredentials-Simulator.m */; };
 		9263FB461379219E0054E572 /* OUICredentials.h in Headers */ = {isa = PBXBuildFile; fileRef = 94074482125F9FA900C4AECB /* OUICredentials.h */; };
-		9263FBF21379313B0054E572 /* OUIDocumentPicker.h in Headers */ = {isa = PBXBuildFile; fileRef = 346C4AD81193273600BE8C49 /* OUIDocumentPicker.h */; };
+		9263FBF21379313B0054E572 /* OUIDocumentPicker.h in Headers */ = {isa = PBXBuildFile; fileRef = 346C4AD81193273600BE8C49 /* OUIDocumentPicker.h */; settings = {ATTRIBUTES = (Public, ); }; };
 		94159F001283106200BC3C92 /* OUIExportFinishedBadge.png in Copy Resources */ = {isa = PBXBuildFile; fileRef = 94159EF612830FFA00BC3C92 /* OUIExportFinishedBadge.png */; };
 		9415A0191283326300BC3C92 /* OUIExportOptionsBackgroundView.h in Headers */ = {isa = PBXBuildFile; fileRef = 9415A0171283326300BC3C92 /* OUIExportOptionsBackgroundView.h */; };
 		9415A01A1283326300BC3C92 /* OUIExportOptionsBackgroundView.m in Sources */ = {isa = PBXBuildFile; fileRef = 9415A0181283326300BC3C92 /* OUIExportOptionsBackgroundView.m */; };

@@ -338,9 +338,8 @@ void OUITextLayoutDrawFrame(CGContextRef ctx, CTFrameRef frame, CGRect bounds, C
 {
     CGContextSetTextPosition(ctx, 0, 0);
     CGContextSetTextMatrix(ctx, CGAffineTransformIdentity);
-    
     CGContextTranslateCTM(ctx, layoutOrigin.x, layoutOrigin.y);
-        
+
     DEBUG_TEXT(@"  CTFrameDraw device = %@", NSStringFromCGPoint(CGContextConvertPointToDeviceSpace(ctx, CGPointZero)));
     DEBUG_TEXT(@"  ... bounds = %@", NSStringFromCGRect(bounds));
     CTFrameDraw(frame, ctx);

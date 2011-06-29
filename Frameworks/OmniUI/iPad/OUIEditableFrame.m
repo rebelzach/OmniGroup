@@ -2102,6 +2102,9 @@ static BOOL _recognizerTouchedView(UIGestureRecognizer *recognizer, UIView *view
 
     afterMutate(self, _cmd, options);
     afterContentReplaced(self);
+  
+    // RWS update layout
+    [self setNeedsLayout];
 }
 
 #pragma mark -
@@ -4248,8 +4251,9 @@ BOOL OUITextLayoutDrawRunBackgrounds(CGContextRef ctx, CTFrameRef drawnFrame, NS
             _currentTextInset.top = OUITopTextInsetToCenterFirstLineAtY(drawnFrame, _firstLineCenterTarget / scale, _minimumTextInset);
             _currentTextInset.bottom = _minimumTextInset.bottom + _currentTextInset.top - _minimumTextInset.top;
         }
-        layoutOrigin = OUITextLayoutOrigin(typographicFrame, _currentTextInset, bounds, scale);
         
+        layoutOrigin = OUITextLayoutOrigin(typographicFrame, _currentTextInset, bounds, scale);
+        //NSLog(@"Layout frame %@ height:%f", NSStringFromCGRect(typographicFrame), layoutOrigin.y + OUITextLayoutUnlimitedSize);
         if (flags.delegateRespondsToLayoutChanged)
             [delegate textViewLayoutChanged:self];
     }
