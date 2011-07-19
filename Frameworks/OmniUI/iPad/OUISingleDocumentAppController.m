@@ -19,6 +19,8 @@
 #import <OmniUI/OUIToolbarViewController.h>
 #import <OmniBase/OmniBase.h>
 #import <OmniFileStore/OFSFileManager.h>
+#import <OmniFileStore/OFSFileInfo.h>
+#import <OmniUI/UIView-OUIExtensions.h>
 
 #import "OUIToolbarViewController-Internal.h"
 
@@ -35,13 +37,24 @@ static NSString * const SelectAction = @"select";
 - (void)_openDocument:(OUIDocumentProxy *)proxy animated:(BOOL)animated;
 - (void)_closeDocument:(id)sender;
 - (void)_setupGesturesOnTitleTextField;
-- (void)_proxyFinishedLoadingPreview:(NSNotification *)note;
+- (void)_proxyFinishedLoadingPreview:(OUIDocumentProxy *)proxy;
+- (void)_proxyFinishedLoadingPreviewNotification:(NSNotification *)note;
+@end
+
+@interface OUIToolbarTitleButton : UIButton
+{
+    BOOL _touchesInside;
+    UIImageView *_highlightView;
+}
+
 @end
 
 @implementation OUISingleDocumentAppController
 
 + (void)initialize;
 {
+    OBINITIALIZE;
+
 #if 0 && defined(DEBUG) && OUI_GESTURE_RECOGNIZER_DEBUG
     [UIGestureRecognizer enableStateChangeLogging];
 #endif
@@ -85,12 +98,11 @@ static NSString * const SelectAction = @"select";
 
 @synthesize window = _window;
 @synthesize toolbarViewController = _toolbarViewController;
-@synthesize appTitleToolbarItem = _appTitleToolbarItem;
-@synthesize appTitleToolbarTextField = _appTitleToolbarTextField;
+@synthesize appTitleToolbarButton = _appTitleToolbarButton;
 @synthesize documentTitleTextField = _documentTitleTextField;
 @synthesize documentTitleToolbarItem = _documentTitleToolbarItem;
 
-- (UIBarButtonItem *)closeDocumentBarButtonItem;
+- (OUIBarButtonItem *)closeDocumentBarButtonItem;
 {
     if (!_closeDocumentBarButtonItem) {
         NSString *closeDocumentTitle = NSLocalizedStringWithDefaultValue(@"Documents <back button>", @"OmniUI", OMNI_BUNDLE, @"Documents", @"Toolbar button title for returning to list of documents.");
@@ -100,7 +112,7 @@ static NSString * const SelectAction = @"select";
     return _closeDocumentBarButtonItem;
 }
 
-- (UIBarButtonItem *)infoBarButtonItem;
+- (OUIBarButtonItem *)infoBarButtonItem;
 {
     if (!_infoBarButtonItem)
         _infoBarButtonItem = [[OUIInspector inspectorBarButtonItemWithTarget:self action:@selector(_showInspector:)] retain];
@@ -121,19 +133,20 @@ static NSString * const SelectAction = @"select";
     [self.documentPicker newDocument:sender];
 }
 
+/* We haven't actually implemented favorites yet
+
 - (void)toggleFavorites:(id)sender;
 {
-    [self.documentPicker.previewScrollView snapToProxy:self.documentPicker.previewScrollView.lastProxy animated:NO];
+    [self.documentPicker setSelectedProxy:self.documentPicker.previewScrollView.lastProxy scrolling:YES animated:NO];
 }
+*/
 
 - (NSString *)documentTypeForURL:(NSURL *)url;
 {
-    NSString *extension = [[url path] pathExtension];
-    CFStringRef uti = UTTypeCreatePreferredIdentifierForTag(kUTTagClassFilenameExtension, (CFStringRef)extension, NULL/*conformingToUTI*/);
+    NSString *uti = [OFSFileInfo UTIForURL:url];
     OBASSERT(uti);
-    OBASSERT([(NSString *)uti hasPrefix:@"dyn."] == NO); // should be registered
-    
-    return [NSMakeCollectable(uti) autorelease];
+    OBASSERT([uti hasPrefix:@"dyn."] == NO); // should be registered
+    return uti;
 }
 
 - (OUIDocument *)document;
@@ -150,21 +163,21 @@ static NSString * const SelectAction = @"select";
     NSArray *proxies = picker.previewScrollView.sortedProxies;
     NSUInteger proxyCount = [proxies count];
     
-    if (!proxy || proxyCount < 2) {
-        _appTitleToolbarTextField.text = title;
-        return;
+    if (proxy != nil && proxyCount > 1) {
+        NSUInteger proxyIndex = [proxies indexOfObjectIdenticalTo:proxy];
+        if (proxyIndex == NSNotFound) {
+            OBASSERT_NOT_REACHED("Missing proxy");
+            proxyIndex = 1; // less terrible.
+        }
+        
+        NSString *counterFormat = NSLocalizedStringWithDefaultValue(@"%d of %d <document index", @"OmniUI", OMNI_BUNDLE, @"%@ (%d of %d)", @"format for showing the main title, document index and document count, in that order");
+        title = [NSString stringWithFormat:counterFormat, title, proxyIndex + 1, proxyCount];
     }
     
-    NSUInteger proxyIndex = [proxies indexOfObjectIdenticalTo:proxy];
-    if (proxyIndex == NSNotFound) {
-        OBASSERT_NOT_REACHED("Missing proxy");
-        proxyIndex = 1; // less terrible.
-    }
-    
-    NSString *counterFormat = NSLocalizedStringWithDefaultValue(@"%d of %d <document index", @"OmniUI", OMNI_BUNDLE, @"%@ (%d of %d)", @"format for showing the main title, document index and document count, in that order");
-    title = [NSString stringWithFormat:counterFormat, title, proxyIndex + 1, proxyCount];
-    
-    _appTitleToolbarTextField.text = title;
+    [_appTitleToolbarButton setTitle:title forState:UIControlStateNormal];
+    _appTitleToolbarButton.titleLabel.font = [UIFont boldSystemFontOfSize:17.0];
+    [_appTitleToolbarButton sizeToFit];
+    [_appTitleToolbarButton layoutIfNeeded];
 }
 
 - (void)documentPicker:(OUIDocumentPicker *)picker scannedProxies:(NSSet *)proxies;
@@ -211,20 +224,23 @@ static NSString * const SelectAction = @"select";
     OBRequestConcreteImplementation(self, _cmd);
 }
 
-- (void)dismissInspectorImmediately;
-{
-    OBRequestConcreteImplementation(self, _cmd);
-}
-
 #pragma mark -
 #pragma mark UITextFieldDelegate
+
+- (BOOL)textFieldShouldBeginEditing:(UITextField *)textField;
+{
+    OBPRECONDITION(textField == _documentTitleTextField);
+
+    textField.text = [self.documentPicker editNameForDocumentURL:[_document url]];
+    return YES;
+}
 
 - (void)textFieldDidEndEditing:(UITextField *)textField;
 {
     OBPRECONDITION(textField == _documentTitleTextField);
     
     // If we are new, there will be no proxy.
-    NSString *originalName = [[[_document.url path] lastPathComponent] stringByDeletingPathExtension];
+    NSString *originalName = [self.documentPicker editNameForDocumentURL:_document.url];
     NSString *newName = [textField text];
     if (!newName || [newName length] == 0) {
         textField.text = originalName;
@@ -260,7 +276,7 @@ static NSString * const SelectAction = @"select";
             [documentPicker rescanDocuments];
         }
         
-        textField.text = [[[[_document url] path] lastPathComponent] stringByDeletingPathExtension];
+        textField.text = [self.documentPicker displayNameForDocumentURL:[_document url]];
     }
     
     // UITextField adjusts its recognizers when it starts editing. Put ours back.
@@ -302,11 +318,18 @@ static NSString * const SelectAction = @"select";
     {
         NSMutableArray *toolbarItems = [NSMutableArray array];
         
+        CGFloat interItemPadding = [self.toolbarViewController interItemPadding];
+        CGFloat leftWidth = 0.0f;
+        CGFloat rightWidth = 0.0f;
+        NSInteger itemCount = -1;
+
         if (documentPicker.documentTypeForNewFiles != nil) {
             UIBarButtonItem *addItem = [[[OUIBarButtonItem alloc] initWithTitle:NSLocalizedStringFromTableInBundle(@"New Document", @"OmniUI", OMNI_BUNDLE, @"Toolbar button for creating a new, empty document.")
                                                                           style:UIBarButtonItemStyleBordered
                                                                          target:self action:@selector(makeNewDocument:)] autorelease];
             [toolbarItems addObject:addItem];
+            leftWidth += CGRectGetWidth([[addItem customView] bounds]);
+            itemCount++;
         }
         
         if ([[OFPreferenceWrapper sharedPreferenceWrapper] boolForKey:@"OUIImportEnabled"]) {
@@ -314,13 +337,45 @@ static NSString * const SelectAction = @"select";
                                                                              style:UIBarButtonItemStyleBordered 
                                                                             target:self action:@selector(showSyncMenu:)] autorelease];
             [toolbarItems addObject:importItem];
+            leftWidth += CGRectGetWidth([[importItem customView] bounds]);
+            itemCount++;
         }
         
+        if (itemCount > 0)
+        leftWidth += interItemPadding;
+        rightWidth = CGRectGetWidth([self.appMenuBarItem.customView bounds]);
+        UIBarButtonItem *leftPadding = nil;
+        UIBarButtonItem *rightPadding = nil;
+        
+        if (leftWidth > rightWidth) {
+            rightPadding = [[[UIBarButtonItem alloc] initWithBarButtonSystemItem:UIBarButtonSystemItemFixedSpace target:nil action:NULL] autorelease];
+            [rightPadding setWidth:leftWidth - rightWidth + interItemPadding];
+        } else if (rightWidth > leftWidth) {
+            leftPadding = [[[UIBarButtonItem alloc] initWithBarButtonSystemItem:UIBarButtonSystemItemFixedSpace target:nil action:NULL] autorelease];
+            [leftPadding setWidth:rightWidth - leftWidth + interItemPadding];
+        }
+
+        if (leftPadding)
+            [toolbarItems addObject:leftPadding];
         [toolbarItems addObject:[[[UIBarButtonItem alloc] initWithBarButtonSystemItem:UIBarButtonSystemItemFlexibleSpace target:nil action:NULL] autorelease]];
         
-        [toolbarItems addObject:_appTitleToolbarItem];
+        UIButton *titleButton = [OUIToolbarTitleButton buttonWithType:UIButtonTypeCustom];
+        UIImage *disclosureImage = [UIImage imageNamed:@"OUIToolbarTitleDisclosureButton.png"];
+        OBASSERT(disclosureImage != nil);
+        [titleButton setImage:disclosureImage forState:UIControlStateNormal];
+        titleButton.adjustsImageWhenHighlighted = NO;
+        [titleButton addTarget:self.documentPicker action:@selector(filterAction:) forControlEvents:UIControlEventTouchUpInside];
+        self.appTitleToolbarButton = titleButton;
+
+        [self _updateTitle];
+
+        UIBarButtonItem *titleItem = [[UIBarButtonItem alloc] initWithCustomView:titleButton];
+        [toolbarItems addObject:titleItem];
+        [titleItem release];
         
         [toolbarItems addObject:[[[UIBarButtonItem alloc] initWithBarButtonSystemItem:UIBarButtonSystemItemFlexibleSpace target:nil action:NULL] autorelease]];
+        if (rightPadding)
+            [toolbarItems addObject:rightPadding];
         
 #if 0 // Punting on favorites for 1.0
         UIBarButtonItem *favoritesItem = [[[OUIBarButtonItem alloc] initWithImage:[UIImage imageNamed:@"OUIToolbarFavoriteHollow.png"] style:UIBarButtonItemStyleBordered target:self action:@selector(toggleFavorites:)] autorelease];
@@ -418,8 +473,7 @@ static NSString * const SelectAction = @"select";
         if (!proxyToSelect)
             proxyToSelect = documentPicker.previewScrollView.firstProxy;
         
-        [documentPicker.previewScrollView layoutSubviews];
-        [documentPicker.previewScrollView snapToProxy:proxyToSelect animated:NO];
+        [documentPicker setSelectedProxy:proxyToSelect scrolling:YES animated:NO];
     }
     
     return YES;
@@ -469,7 +523,10 @@ static NSString * const SelectAction = @"select";
 {
     NSArray *nextLaunchAction = nil;
     
-    [_window endEditing:YES];
+    OUIWithoutAnimating(^{
+        [_window endEditing:YES];
+        [_window layoutIfNeeded];
+    });
     
     if (_document) {
         NSError *error = nil;
@@ -531,11 +588,6 @@ static NSString * const SelectAction = @"select";
 #pragma mark -
 #pragma mark OUIUndoBarButtonItemTarget
 
-- (void)undoBarButtonItemWillShowPopover;
-{
-    [self dismissInspectorImmediately];
-}
-
 - (void)undo:(id)sender;
 {
     [_document undo:sender];
@@ -561,6 +613,11 @@ static NSString * const SelectAction = @"select";
 
 - (void)_openDocument:(OUIDocumentProxy *)proxy;
 {
+    // If we crash in trying to open this document, we should select it the next time we launch rather than trying to open it over and over again
+    NSArray *nextLaunchAction = [NSArray arrayWithObjects:SelectAction, [proxy.url absoluteString], nil];
+    [[NSUserDefaults standardUserDefaults] setObject:nextLaunchAction forKey:OUINextLaunchActionDefaultsKey];
+    [[NSUserDefaults standardUserDefaults] synchronize];
+
     // We will have already set _document and prepared for the animation in this case
     BOOL isOpeningNewDocument = [proxy.url isEqual:_document.url];
     
@@ -609,7 +666,7 @@ static NSString * const SelectAction = @"select";
         _document = [result retain];
     }
     
-    NSString *title = [[[_document.url path] lastPathComponent] stringByDeletingPathExtension];
+    NSString *title = [self.documentPicker displayNameForDocumentURL:[_document url]];
     _documentTitleTextField.text = title;
     
     _document.viewController.toolbarItems = [self toolbarItemsForDocument:_document];
@@ -626,6 +683,15 @@ static NSString * const SelectAction = @"select";
 
     // Start automatically tracking undo state from this document's undo manager
     _undoBarButtonItem.undoManager = _document.undoManager;
+
+    // Might be a newly created document that was never edited and trivially returns YES to saving. Make sure there is a proxy before overwriting our last default value.
+    NSURL *url = _document.url;
+    OUIDocumentProxy *proxy = [self.documentPicker proxyWithURL:url];
+    if (proxy) {
+        NSArray *nextLaunchAction = [NSArray arrayWithObjects:OpenAction, [url absoluteString], nil];
+        [[NSUserDefaults standardUserDefaults] setObject:nextLaunchAction forKey:OUINextLaunchActionDefaultsKey];
+        [[NSUserDefaults standardUserDefaults] synchronize];
+    }
 
     // UIWindow will automatically create an undo manager if one isn't found along the responder chain. We want to be darn sure that don't end up getting two undo managers and accidentally splitting our registrations between them.
     OBASSERT([_document undoManager] == [_document.viewController undoManager]);
@@ -661,10 +727,13 @@ static NSString * const SelectAction = @"select";
     // Stop tracking the state from this document's undo manager
     _undoBarButtonItem.undoManager = nil;
     
-    [_window endEditing:YES];
+    OUIWithoutAnimating(^{
+        [_window endEditing:YES];
+        [_window layoutIfNeeded];
+    });
     
     // The inspector would animate closed and raise an exception, having detected it was getting deallocated while still visible (but animating away).
-    [self dismissInspectorImmediately];
+    [self dismissPopoverAnimated:NO];
     
     // Ending editing may have started opened an undo group, with the nested group stuff for autosave (see OUIDocument). Give the runloop a chance to close the nested group.
     if ([_document.undoManager groupingLevel] > 0) {
@@ -689,24 +758,30 @@ static NSString * const SelectAction = @"select";
     OUIDocumentProxy *proxy = [picker proxyWithURL:closingURL];
     
     if (proxy.isLoadingPreview) {
-        [[NSNotificationCenter defaultCenter] addObserver:self selector:@selector(_proxyFinishedLoadingPreview:) name:OUIDocumentProxyPreviewDidLoadNotification object:proxy];
+        [[NSNotificationCenter defaultCenter] addObserver:self selector:@selector(_proxyFinishedLoadingPreviewNotification:) name:OUIDocumentProxyPreviewDidLoadNotification object:proxy];
     } else {
-        [self _proxyFinishedLoadingPreview:nil];
+        [self _proxyFinishedLoadingPreview:proxy];
     }
 }
 
-- (void)_proxyFinishedLoadingPreview:(NSNotification *)note;
+- (void)_proxyFinishedLoadingPreview:(OUIDocumentProxy *)proxy;
 {
-    OUIDocumentPicker *picker = self.documentPicker;
-    
-    [[NSNotificationCenter defaultCenter] removeObserver:self name:OUIDocumentProxyPreviewDidLoadNotification object:[note object]];
-    
+    OBPRECONDITION(proxy != nil);
+
     UIView *documentView = [self pickerAnimationViewForTarget:_document];
-    [_toolbarViewController setInnerViewController:self.documentPicker animatingView:documentView toView:picker.selectedProxy.view];
-    
+    self.documentPicker.selectedProxy = proxy;
+    [_toolbarViewController setInnerViewController:self.documentPicker animatingView:documentView toView:self.documentPicker.viewForSelectedProxy];
+
     [_document willClose];
     [_document release];
     _document = nil;
+}
+
+- (void)_proxyFinishedLoadingPreviewNotification:(NSNotification *)note;
+{
+    OUIDocumentProxy *proxy = [note object];
+    [[NSNotificationCenter defaultCenter] removeObserver:self name:OUIDocumentProxyPreviewDidLoadNotification object:proxy];
+    [self _proxyFinishedLoadingPreview:proxy];
 }
 
 - (void)_showInspector:(id)sender;
@@ -753,6 +828,82 @@ static NSString * const SelectAction = @"select";
     [_documentTitleTextField setTextColor:[UIColor whiteColor]];
     [_documentTitleTextField setBackgroundColor:[UIColor clearColor]];
     _documentTitleTextField.borderStyle = UITextBorderStyleNone;
+}
+
+@end
+
+@implementation OUIToolbarTitleButton
+
+#pragma mark -
+#pragma mark UIControl subclass
+
+- (BOOL)beginTrackingWithTouch:(UITouch *)touch withEvent:(UIEvent *)event;
+{
+    _touchesInside = YES;
+    
+    _highlightView = [[UIImageView alloc] initWithImage:[UIImage imageNamed:@"OUIToolbarButtonFauxHighlight.png"]];
+    CGRect imageRect = [self bounds];
+    imageRect.origin.x = floor(CGRectGetMidX(imageRect));
+    imageRect.origin.y = floor(CGRectGetMidY(imageRect));
+    imageRect.size = [_highlightView frame].size;
+    imageRect.origin.x -= floor(imageRect.size.width/2);
+    imageRect.origin.y -= floor(imageRect.size.height/2);
+    [_highlightView setFrame:imageRect];
+    [self addSubview:_highlightView];
+    return [super beginTrackingWithTouch:touch withEvent:event];
+}
+
+- (BOOL)continueTrackingWithTouch:(UITouch *)touch withEvent:(UIEvent *)event;
+{
+    CGPoint location = [touch locationInView:self];
+    CGRect rect = [self bounds];
+    BOOL inside = CGRectContainsPoint(rect, location);
+    if (inside != _touchesInside) {
+        _touchesInside = inside;
+        [_highlightView setHidden:!_touchesInside];
+    }
+    return [super continueTrackingWithTouch:touch withEvent:event];
+}
+
+- (void)endTrackingWithTouch:(UITouch *)touch withEvent:(UIEvent *)event
+{
+    [super endTrackingWithTouch:touch withEvent:event];
+    [_highlightView removeFromSuperview];
+    [_highlightView release];
+    _highlightView = nil;
+}
+
+- (void)cancelTrackingWithEvent:(UIEvent *)event;
+{
+    [super cancelTrackingWithEvent:event];
+    [_highlightView removeFromSuperview];
+    [_highlightView release];
+    _highlightView = nil;
+}
+
+- (void)dealloc;
+{
+    [_highlightView release];
+    [super dealloc];
+}
+
+#pragma mark -
+#pragma mark UIButton subclass
+
+- (CGRect)titleRectForContentRect:(CGRect)contentRect;
+{
+    CGRect originalTitleRect = [super titleRectForContentRect:contentRect];
+    CGRect titleRect = originalTitleRect;
+    titleRect.origin.x = CGRectGetMinX(contentRect);
+    return titleRect;
+}
+
+- (CGRect)imageRectForContentRect:(CGRect)contentRect;
+{
+    CGRect originalImageRect = [super imageRectForContentRect:contentRect];
+    CGRect imageRect = originalImageRect;
+    imageRect.origin.x = CGRectGetMaxX(contentRect) - imageRect.size.width;
+    return imageRect;
 }
 
 @end

@@ -1,4 +1,4 @@
-// Copyright 1999-2007, 2010 Omni Development, Inc.  All rights reserved.
+// Copyright 1999-2007, 2010-2011 Omni Development, Inc. All rights reserved.
 //
 // This software may only be used and reproduced according to the
 // terms in the file OmniSourceLicense.html, which should be
@@ -140,7 +140,7 @@ static OFPreference *directoryIndexFilenamePreference = nil;
     if (![importedPreference boolValue]) {
         NSDictionary *oldDomain = [[NSUserDefaults standardUserDefaults] persistentDomainForName:@"com.omnigroup.OmniWeb"];
         NSDictionary *oldShortcutDictionary = [oldDomain objectForKey:@"OWAddressShortcuts"];
-        if (oldShortcutDictionary == nil) {
+        if (oldShortcutDictionary != nil) {
             // -[NSUserDefaults dictionaryForKey:] returns nil if the stored value was originally a string, which is how we used to store everything with OFUserDefaults.  This lets us read the old format, then store the new format.
             oldShortcutDictionary = [(NSString *)oldShortcutDictionary propertyList];
         }
@@ -517,7 +517,7 @@ addressForNotSoObviousHostname(NSString *string)
 
 - initWithURL:(OWURL *)aURL target:(NSString *)aTarget methodString:(NSString *)aMethodString methodDictionary:(NSDictionary *)aMethodDictionary effect:(OWAddressEffect)anEffect forceAlwaysUnique:(BOOL)shouldForceAlwaysUnique contextDictionary:(NSDictionary *)aContextDictionary;
 {
-    if (![super init])
+    if (!(self = [super init]))
 	return nil;
 
     url = [aURL retain];
@@ -550,8 +550,8 @@ addressForNotSoObviousHostname(NSString *string)
 {
     OBPRECONDITION(dictionary != nil);
 
-    if ([super init] == nil)
-	return nil;
+    if (!(self = [super init]))
+        return nil;
 
     url = [[OWURL urlFromString:[dictionary objectForKey:@"url" defaultObject:@""]] retain];
     target = [[dictionary objectForKey:@"target" defaultObject:@""] retain];
@@ -1137,7 +1137,7 @@ addressForNotSoObviousHostname(NSString *string)
         [request setHTTPBody:[methodDictionary objectForKey:OWAddressContentDataMethodKey]];
     }
 #ifdef DEBUG_kc
-    NSLog(@"-[%@ %s]: request=%@, method=%@, headers=%@, body=%@, address=%@", OBShortObjectDescription(self), _cmd, request, [request HTTPMethod], [request allHTTPHeaderFields], [request HTTPBody], self);
+    NSLog(@"-[%@ %@]: request=%@, method=%@, headers=%@, body=%@, address=%@", OBShortObjectDescription(self), NSStringFromSelector(_cmd), request, [request HTTPMethod], [request allHTTPHeaderFields], [request HTTPBody], self);
 #endif
     return request;
 }

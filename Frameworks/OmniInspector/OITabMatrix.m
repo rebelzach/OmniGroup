@@ -1,4 +1,4 @@
-// Copyright 2005-2007, 2010 Omni Development, Inc.  All rights reserved.
+// Copyright 2005-2007, 2010-2011 Omni Development, Inc. All rights reserved.
 //
 // This software may only be used and reproduced according to the
 // terms in the file OmniSourceLicense.html, which should be
@@ -145,7 +145,13 @@ static void initializeDepressionImages(void)
             }
         }
     }
-    [super mouseDown:event];
+    @try {
+        // <bug:///71831> (Exception Crash after after moving the inspectors [no repro])
+        // mouseDown can throw and we don't want OmniPlan to crash.
+        [super mouseDown:event];
+    } @catch (NSException *exception) {
+        NSLog(@"Exception raised in -[%@ %@]: %@", OBShortObjectDescription(self), NSStringFromSelector(_cmd), exception);
+    } 
     [allCells makeObjectsPerformSelector:@selector(clearState)];
     [self  setNeedsDisplay:YES];
     [oldSelection release];

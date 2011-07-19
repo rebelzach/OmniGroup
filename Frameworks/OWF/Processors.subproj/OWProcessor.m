@@ -87,13 +87,11 @@ unlockAndReturn:
     static OFMessageQueue *processorQueue = nil;
 
     if (processorQueue == nil) {
-        NSInteger threadCount;
-
-        threadCount = [[NSUserDefaults standardUserDefaults] integerForKey:@"OWProcessorThreadCount"];
+        NSInteger threadCount = [[NSUserDefaults standardUserDefaults] integerForKey:@"OWProcessorThreadCount"];
         if (threadCount <= 0)
             threadCount = 12;
 #if defined(DEBUG_kc) || defined(DEBUG_wiml)
-        NSLog(@"OWProcessor: Using %d threads", threadCount);
+        NSLog(@"OWProcessor: Using %ld threads", threadCount);
 #endif
         processorQueue = [[OFMessageQueue alloc] init];
         [processorQueue startBackgroundProcessors:threadCount];
@@ -138,7 +136,7 @@ unlockAndReturn:
 
 - initWithContent:(OWContent *)initialContent context:(id <OWProcessorContext>)aPipeline;
 {
-    if (![super init])
+    if (!(self = [super init]))
 	return nil;
     
     OFSimpleLockInit(&displayablesSimpleLock);

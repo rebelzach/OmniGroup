@@ -158,7 +158,7 @@ static NSString *describeMethod(Method m, BOOL *nonSystem)
             [buf appendString:path];
         }
         
-        if (![path hasPrefix:@"/System/"] && ![path hasPrefix:@"/Library/"] && ![path hasPrefix:@"/usr/lib/"])
+        if (![path hasPrefix:@"/System/"] && ![path hasPrefix:@"/Library/"] && ![path hasPrefix:@"/usr/lib/"] && ![path hasSuffix:@"FBAccess"])
             *nonSystem = YES;
     }
     
@@ -414,11 +414,11 @@ static void _checkSignaturesVsProtocol(Class cls, Protocol *protocol)
     // Recursively check protocol conformed to by the original protocol.
     {
         unsigned int protocolIndex = 0;
-        Protocol **protocols = protocol_copyProtocolList(protocol, &protocolIndex);
+        Protocol * const *protocols = protocol_copyProtocolList(protocol, &protocolIndex);
         if (protocols) {
             while (protocolIndex--)
                 _checkSignaturesVsProtocol(cls, protocols[protocolIndex]);
-            free(protocols);
+            free((void *)protocols);
         }
     }
     
@@ -430,11 +430,11 @@ static void _checkSignaturesVsProtocol(Class cls, Protocol *protocol)
 static void _checkSignaturesVsProtocols(Class cls)
 {
     unsigned int protocolIndex = 0;
-    Protocol **protocols = class_copyProtocolList(cls, &protocolIndex);
+    Protocol * const *protocols = class_copyProtocolList(cls, &protocolIndex);
     if (protocols) {
         while (protocolIndex--)
             _checkSignaturesVsProtocol(cls, protocols[protocolIndex]);
-        free(protocols);
+        free((void *)protocols);
     }
 }
 
@@ -459,6 +459,16 @@ static void _validateMethodSignatures(void)
     for (classIndex = 0; classIndex < classCount; classIndex++) {
         Class cls = classes[classIndex];
         
+        /* Some classes (that aren't our problem) asplode when they try to dynamically create getters/setters. */
+        const char *clsName = class_getName(cls);
+        if (strncmp(clsName, "NS", 2) == 0 ||
+            strncmp(clsName, "_NS", 3) == 0 ||
+            strncmp(clsName, "__NS", 4) == 0 ||
+            strncmp(clsName, "__CF", 4) == 0) {
+            /* In particular, _NS[View]Animator chokes in this case. But we don't really need to check any _NS classes. */
+            continue;
+        }
+            
         unsigned int methodIndex = 0;
         Method *methods = class_copyMethodList(cls, &methodIndex);
         _checkSignaturesVsSuperclass(cls, methods, methodIndex); // instance methods
@@ -532,7 +542,7 @@ static void _checkForMethodsInDeprecatedProtocols(void)
     
     BOOL oneDeprecatedProtocolFound = NO;
     unsigned int protocolIndex = 0;
-    Protocol **protocols = objc_copyProtocolList(&protocolIndex);
+    Protocol * const *protocols = objc_copyProtocolList(&protocolIndex);
     if (protocols) {
         while (protocolIndex--) {
             Protocol *protocol = protocols[protocolIndex];
@@ -565,7 +575,7 @@ static void _checkForMethodsInDeprecatedProtocols(void)
                 free(descs);
             }
         }
-        free(protocols);
+        free((void *)protocols);
     }
     
     // Make sure the OBDEPRECATED_METHODS macro is forcing the otherwise unused protocols to be emitted

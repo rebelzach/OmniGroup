@@ -507,7 +507,8 @@ got_path:
 
 - initWithCoder:(NSCoder *)archiver
 {
-    [super init];
+    if (!(self = [super init]))
+        return nil;
     contentTypeString = [[archiver decodeObject] retain];
     // This object will be deallocated in -awakeAfterUsingCoder: and replaced with a real OWContent.
     return self;
@@ -621,7 +622,7 @@ got_path:
     OWContentType *replacedContentType = [contentTypeDictionary objectForKey:key];
     if (replacedContentType != nil && replacedContentType != self) {
 #ifdef DEBUG_kc
-        NSLog(@"-[%@ %s%@]: replacing %@ with %@", OBShortObjectDescription(self), _cmd, newAlias, [replacedContentType contentTypeString], [self contentTypeString]);
+        NSLog(@"-[%@ %@%@]: replacing %@ with %@", OBShortObjectDescription(self), NSStringFromSelector(_cmd), newAlias, [replacedContentType contentTypeString], [self contentTypeString]);
 #endif
         [replacedContentTypes addObject:replacedContentType];
     }
@@ -1026,7 +1027,7 @@ got_path:
 {
     unsigned int privateTypeIndex;
 
-    if (![super init])
+    if (!(self = [super init]))
 	return nil;
 
     contentTypeString = [aString copyWithZone:zone];

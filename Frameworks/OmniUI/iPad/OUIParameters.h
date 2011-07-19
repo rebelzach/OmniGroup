@@ -15,8 +15,8 @@ typedef struct {
 
 // OUIInspectorWell
 #define kOUIInspectorWellHeight (37)
-#define kOUIInspectorWellBorderGradientStartGrayAlpha ((OUIGrayAlpha){0.31, 1.0})
-#define kOUIInspectorWellBorderGradientEndGrayAlpha ((OUIGrayAlpha){0.48, 1.0})
+#define kOUIInspectorWellBorderGradientStartGrayAlpha ((OUIGrayAlpha){0.42, 1.0})
+#define kOUIInspectorWellBorderGradientEndGrayAlpha ((OUIGrayAlpha){0.58, 1.0})
 #define kOUIInspectorWellInnerShadowGrayAlpha ((OUIGrayAlpha){0.0, 0.4})
 #define kOUIInspectorWellInnerShadowBlur (3)
 #define kOUIInspectorWellInnerShadowOffset (CGSizeMake(0,1))
@@ -55,3 +55,14 @@ typedef struct {
 // OUIGradientView
 #define kOUIShadowEdgeThickness (6.0f)
 #define kOUIShadowEdgeMaximumAlpha (0.4f)
+
+// OUIToolbar
+#define kOUIToolbarEdgePadding (5.0f)
+#define kOUIToolbarIteritemPadding (12)
+
+// OUIExportOptionsView and friends
+
+// UIScrollView(OUIExtensions)
+#define kOUIAutoscrollBorderWidth (44.0 * 1.1) // Area on edge of the screen that defines the ramp for autoscroll speed. Want to be able to hit the max speed without finger risking going off edge of view
+#define kOUIAutoscrollMaximumVelocity (850) // in pixels per second
+#define kOUIAutoscrollVelocityRampPower (0.25) // power ramp for autoscroll velocity

@@ -1,4 +1,4 @@
-// Copyright 2009-2010 Omni Development, Inc.  All rights reserved.
+// Copyright 2009-2011 Omni Development, Inc.  All rights reserved.
 //
 // This software may only be used and reproduced according to the
 // terms in the file OmniSourceLicense.html, which should be
@@ -9,6 +9,9 @@
 
 #import <Foundation/NSObject.h>
 #import <Security/Security.h>
+#import <OmniFoundation/OFDigestUtilities.h>
+
+#define OF_ENABLE_CSSM 1
 
 /*
  This file has a handful of trivial data-holders for CSSM / CDSA objects: service providers, keys, and cryptographic contexts.
@@ -18,13 +21,18 @@
  The MAC and Signature objects conform to some common protocols, allowing the caller to ignore some minor differences in the way they behave.
 */
 
+#if OF_ENABLE_CSSM
 NSString *OFStringFromCSSMReturn(CSSM_RETURN code);
 BOOL OFErrorFromCSSMReturn(NSError **outError, CSSM_RETURN errcode, NSString *function);
 NSArray *OFReadCertificatesFromFile(NSString *path, SecExternalFormat inputFormat_, NSError **outError);
 NSData *OFGetAppleKeyDigest(const CSSM_KEY *pkey, CSSM_CC_HANDLE optionalContext, NSError **outError);
+#endif
 NSString *OFSummarizeTrustResult(SecTrustRef evaluationContext);
+#if OF_ENABLE_CSSM
 CFArrayRef OFCopyIdentitiesForAuthority(CFArrayRef keychains, CSSM_KEYUSE usage, CFTypeRef anchors, SecPolicyRef policy, NSError **outError);
+#endif
 
+#if OF_ENABLE_CSSM
 @interface OFCDSAModule : NSObject
 {
     CSSM_MODULE_HANDLE hdl;
@@ -74,19 +82,7 @@ CFArrayRef OFCopyIdentitiesForAuthority(CFArrayRef keychains, CSSM_KEYUSE usage,
 
 @end
 
-@protocol OFCSSMBufferEater
-- (BOOL)processBuffers:(const CSSM_DATA *)buffers count:(unsigned int)bufferCount error:(NSError **)outError;
-@end
-
-@protocol OFCSSMDigestionContext <OFCSSMBufferEater>
-- (BOOL)verifyInit:(NSError **)outError;
-- (BOOL)verifyFinal:(NSData *)digest error:(NSError **)outError;
-
-- (BOOL)generateInit:(NSError **)outError;
-- (NSData *)generateFinal:(NSError **)outError;
-@end
-
-@interface OFCSSMMacContext : OFCSSMCryptographicContext <OFCSSMDigestionContext>
+@interface OFCSSMMacContext : OFCSSMCryptographicContext <OFDigestionContext>
 {
     BOOL generating;
 }
@@ -97,11 +93,11 @@ CFArrayRef OFCopyIdentitiesForAuthority(CFArrayRef keychains, CSSM_KEYUSE usage,
 - (BOOL)generateInit:(NSError **)outError;
 - (NSData *)generateFinal:(NSError **)outError;
 
-- (BOOL)processBuffers:(const CSSM_DATA *)buffers count:(unsigned int)bufferCount error:(NSError **)outError;
+- (BOOL)processBuffer:(const uint8_t *)buffer length:(size_t)length error:(NSError **)outError;
 
 @end
 
-@interface OFCSSMSignatureContext : OFCSSMCryptographicContext <OFCSSMDigestionContext>
+@interface OFCSSMSignatureContext : OFCSSMCryptographicContext <OFDigestionContext>
 {
     BOOL signing;
 }
@@ -112,11 +108,11 @@ CFArrayRef OFCopyIdentitiesForAuthority(CFArrayRef keychains, CSSM_KEYUSE usage,
 - (BOOL)generateInit:(NSError **)outError;
 - (NSData *)generateFinal:(NSError **)outError;
 
-- (BOOL)processBuffers:(const CSSM_DATA *)buffers count:(unsigned int)bufferCount error:(NSError **)outError;
+- (BOOL)processBuffer:(const uint8_t *)buffer length:(size_t)length error:(NSError **)outError;
 
 @end
 
-@interface OFCSSMDigestContext : OFCSSMCryptographicContext <OFCSSMDigestionContext>
+@interface OFCSSMDigestContext : OFCSSMCryptographicContext <OFDigestionContext>
 {
     NSData *result;
 }
@@ -127,9 +123,10 @@ CFArrayRef OFCopyIdentitiesForAuthority(CFArrayRef keychains, CSSM_KEYUSE usage,
 - (BOOL)generateInit:(NSError **)outError;
 - (NSData *)generateFinal:(NSError **)outError;
 
-- (BOOL)processBuffers:(const CSSM_DATA *)buffers count:(unsigned int)bufferCount error:(NSError **)outError;
+- (BOOL)processBuffer:(const uint8_t *)buffer length:(size_t)length error:(NSError **)outError;
 
 @property (readonly, nonatomic) NSData *result;
 
 @end
+#endif // OF_ENABLE_CSSM
 

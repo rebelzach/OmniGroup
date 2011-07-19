@@ -19,8 +19,8 @@
     UIWindow *_window;
     OUIToolbarViewController *_toolbarViewController;
     
-    UIBarButtonItem *_appTitleToolbarItem;
-    UITextField *_appTitleToolbarTextField;
+    // UIBarButtonItem *_appTitleToolbarItem;
+    UIButton *_appTitleToolbarButton;
     
     OUIBarButtonItem *_closeDocumentBarButtonItem;
     UITextField *_documentTitleTextField;
@@ -34,14 +34,13 @@
 
 @property(nonatomic,retain) IBOutlet UIWindow *window;
 @property(nonatomic,retain) IBOutlet OUIToolbarViewController *toolbarViewController;
-@property(nonatomic,retain) IBOutlet UIBarButtonItem *appTitleToolbarItem;
-@property(nonatomic,retain) IBOutlet UITextField *appTitleToolbarTextField;
 @property(nonatomic,retain) IBOutlet UITextField *documentTitleTextField;
 @property(nonatomic,retain) IBOutlet UIBarButtonItem *documentTitleToolbarItem;
 
-@property(readonly) UIBarButtonItem *closeDocumentBarButtonItem;
+@property(nonatomic,retain) UIButton *appTitleToolbarButton;
+@property(readonly) OUIBarButtonItem *closeDocumentBarButtonItem;
 @property(readonly) OUIUndoBarButtonItem *undoBarButtonItem;
-@property(readonly) UIBarButtonItem *infoBarButtonItem;
+@property(readonly) OUIBarButtonItem *infoBarButtonItem;
 
 - (NSString *)documentTypeForURL:(NSURL *)url;
 - (BOOL)createNewDocumentAtURL:(NSURL *)url error:(NSError **)outError;
@@ -59,6 +58,5 @@
 - (UIView *)pickerAnimationViewForTarget:(OUIDocument *)document;
 - (NSArray *)toolbarItemsForDocument:(OUIDocument *)document;
 - (void)showInspectorFromBarButtonItem:(UIBarButtonItem *)item;
-- (void)dismissInspectorImmediately;
 
 @end

@@ -1,4 +1,4 @@
-// Copyright 2005, 2007, 2010 Omni Development, Inc.  All rights reserved.
+// Copyright 2005, 2007, 2010-2011 Omni Development, Inc.  All rights reserved.
 //
 // This software may only be used and reproduced according to the
 // terms in the file OmniSourceLicense.html, which should be
@@ -11,6 +11,7 @@
 #import <OmniBase/OmniBase.h>
 #import "NSMutableDictionary-OFExtensions.h"
 #import <Security/Security.h>
+
 
 RCS_ID("$Id$");
 
@@ -31,6 +32,7 @@ static const struct {
     { 0, nil }
 };
 
+/* The original motivation for OFStringFromCSSMReturn() was that we had to weak-link both cssmErrorString() (for 10.4) and SecCopyErrorMessageString() (for later OS revisions), but nw it's mostly a cover on SecCopyErrorMessageString(). However, it's still handy to have a guaranteed non-nil result that's at least minimally informative. */
 NSString *OFStringFromCSSMReturn(CSSM_RETURN code)
 {
     NSString *errorString;
@@ -74,6 +76,7 @@ BOOL OFErrorFromCSSMReturn(NSError **outError, CSSM_RETURN errcode, NSString *fu
     return NO; // Useless, but makes clang-analyze happy
 }
 
+#if OF_ENABLE_CSSM
 static inline NSString *NSStringFromCSSMGUID(CSSM_GUID uid)
 {
     /* Note that despite the presence of ints and shorts in the CSSM_GUID structure, it's actually a byte sequence: the ordering within Data1, for example, does not change depending on the host's byte order. */
@@ -86,9 +89,11 @@ static inline NSString *NSStringFromCSSMGUID(CSSM_GUID uid)
             uid.Data4[0], uid.Data4[1], uid.Data4[2], uid.Data4[3], 
             uid.Data4[4], uid.Data4[5], uid.Data4[6], uid.Data4[7]];
 }
+#endif
 
 #pragma mark Cryptographic Service Provider handle
 
+#if OF_ENABLE_CSSM
 @implementation OFCDSAModule
 
 static void *cssmLibcMalloc(CSSM_SIZE size, void *allocref)
@@ -228,9 +233,12 @@ static const CSSM_VERSION callingApiVersion = {2,0};
 }
 
 @end
+#endif
+
 
 #pragma mark Key reference
 
+#if OF_ENABLE_CSSM
 @implementation OFCSSMKey
 
 - initWithCSP:(OFCDSAModule *)cryptographicServiceProvider
@@ -391,9 +399,11 @@ static const CSSM_VERSION callingApiVersion = {2,0};
 }
 
 @end
+#endif
 
 #pragma mark Cryptographic contexts of various sorts
 
+#if OF_ENABLE_CSSM
 static inline BOOL cssmCheckError(NSError **outError, CSSM_RETURN errcode, NSString *function)
 {
     if (errcode == CSSM_OK)
@@ -435,13 +445,14 @@ static inline BOOL cssmCheckError(NSError **outError, CSSM_RETURN errcode, NSStr
     return cssmCheckError(outError, err, @"CSSM_VerifyMacInit");
 }
 
-- (BOOL)processBuffers:(const CSSM_DATA *)buffers count:(unsigned int)bufferCount error:(NSError **)outError;
+- (BOOL)processBuffer:(const uint8_t *)buffer length:(size_t)length error:(NSError **)outError;
 {
+    const CSSM_DATA buffers[1] = { { .Data = (uint8_t *)buffer, .Length = length } };
     if (generating) {
-        CSSM_RETURN err = CSSM_GenerateMacUpdate(ccontext, buffers, bufferCount);
+        CSSM_RETURN err = CSSM_GenerateMacUpdate(ccontext, buffers, 1);
         return cssmCheckError(outError, err, @"CSSM_GenerateMacUpdate");
     } else {
-        CSSM_RETURN err = CSSM_VerifyMacUpdate(ccontext, buffers, bufferCount);
+        CSSM_RETURN err = CSSM_VerifyMacUpdate(ccontext, buffers, 1);
         return cssmCheckError(outError, err, @"CSSM_VerifyMacUpdate");
     }
 }
@@ -497,13 +508,14 @@ static inline BOOL cssmCheckError(NSError **outError, CSSM_RETURN errcode, NSStr
     return cssmCheckError(outError, err, @"CSSM_VerifyDataInit");
 }
 
-- (BOOL)processBuffers:(const CSSM_DATA *)buffers count:(unsigned int)bufferCount error:(NSError **)outError;
+- (BOOL)processBuffer:(const uint8_t *)buffer length:(size_t)length error:(NSError **)outError;
 {
+    const CSSM_DATA buffers[1] = { { .Data = (uint8_t *)buffer, .Length = length } };
     if (signing) {
-        CSSM_RETURN err = CSSM_SignDataUpdate(ccontext, buffers, bufferCount);
+        CSSM_RETURN err = CSSM_SignDataUpdate(ccontext, buffers, 1);
         return cssmCheckError(outError, err, @"CSSM_SignDataUpdate");
     } else {
-        CSSM_RETURN err = CSSM_VerifyDataUpdate(ccontext, buffers, bufferCount);
+        CSSM_RETURN err = CSSM_VerifyDataUpdate(ccontext, buffers, 1);
         return cssmCheckError(outError, err, @"CSSM_VerifyDataUpdate");
     }
 }
@@ -558,9 +570,10 @@ static inline BOOL cssmCheckError(NSError **outError, CSSM_RETURN errcode, NSStr
     return cssmCheckError(outError, err, @"CSSM_DigestDataInit");
 }
 
-- (BOOL)processBuffers:(const CSSM_DATA *)buffers count:(unsigned int)bufferCount error:(NSError **)outError;
+- (BOOL)processBuffer:(const uint8_t *)buffer length:(size_t)length error:(NSError **)outError;
 {
-    CSSM_RETURN err = CSSM_DigestDataUpdate(ccontext, buffers, bufferCount);
+    const CSSM_DATA buffers[1] = { { .Data = (uint8_t *)buffer, .Length = length } };
+    CSSM_RETURN err = CSSM_DigestDataUpdate(ccontext, buffers, 1);
     return cssmCheckError(outError, err, @"CSSM_DigestDataUpdate");
 }
 
@@ -612,7 +625,9 @@ static inline BOOL cssmCheckError(NSError **outError, CSSM_RETURN errcode, NSStr
 }
 
 @end
+#endif // OF_ENABLE_CSSM
 
+#if OF_ENABLE_CSSM
 NSArray *OFReadCertificatesFromFile(NSString *path, SecExternalFormat inputFormat_, NSError **outError)
 {
     NSData *pemFile = [[NSData alloc] initWithContentsOfFile:path options:0 error:outError];
@@ -654,7 +669,9 @@ NSArray *OFReadCertificatesFromFile(NSString *path, SecExternalFormat inputForma
     CFRelease(outItems);
     return nsRef;
 }
+#endif
 
+#if OF_ENABLE_CSSM
 NSData *OFGetAppleKeyDigest(const CSSM_KEY *pkey, CSSM_CC_HANDLE ccontext, NSError **outError)
 {
     CSSM_RETURN cssmerr;
@@ -814,3 +831,4 @@ CFArrayRef OFCopyIdentitiesForAuthority(CFArrayRef keychains, CSSM_KEYUSE usage,
     
     return result;
 }
+#endif

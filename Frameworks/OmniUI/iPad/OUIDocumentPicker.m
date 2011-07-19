@@ -1,4 +1,4 @@
-// Copyright 2010 The Omni Group.  All rights reserved.
+// Copyright 2010-2011 The Omni Group. All rights reserved.
 //
 // This software may only be used and reproduced according to the
 // terms in the file OmniSourceLicense.html, which should be
@@ -10,29 +10,35 @@
 #import <MessageUI/MFMailComposeViewController.h>
 #import <MobileCoreServices/UTCoreTypes.h>
 #import <MobileCoreServices/UTType.h>
+#import <OmniFileStore/OFSFileInfo.h>
+#import <OmniFileStore/OFSFileManager.h>
+#import <OmniFoundation/NSDictionary-OFExtensions.h>
 #import <OmniFoundation/NSFileManager-OFSimpleExtensions.h>
+#import <OmniFoundation/NSInvocation-OFExtensions.h>
 #import <OmniFoundation/OFBinding.h>
+#import <OmniFoundation/OFEnumNameTable.h>
+#import <OmniFoundation/OFFileWrapper.h>
 #import <OmniFoundation/OFPreference.h>
 #import <OmniUI/OUIAppController.h>
-#import <OmniUI/OUIDocumentProxy.h>
-#import <OmniUI/OUIDocumentPickerView.h>
+#import <OmniUI/OUIDocumentPDFPreview.h>
+#import <OmniUI/OUIDocumentPickerScrollView.h>
 #import <OmniUI/OUIDocumentPickerDelegate.h>
+#import <OmniUI/OUIDocumentProxy.h>
 #import <OmniUI/OUIToolbarViewController.h>
 #import <OmniUI/OUIDocumentProxyView.h>
 #import <OmniFoundation/NSMutableArray-OFExtensions.h>
 #import <OmniFoundation/NSFileManager-OFSimpleExtensions.h>
 #import <OmniQuartz/CALayer-OQExtensions.h>
 #import <OmniQuartz/OQDrawing.h>
+#import <OmniUnzip/OUZipArchive.h>
 #import <sys/stat.h> // For S_IWUSR
 
+#import "OUIDocumentPickerView.h"
 #import "OUIDocumentProxy-Internal.h"
-#import <OmniUI/OUIDocumentPDFPreview.h>
-#import <OmniFileStore/OFSFileInfo.h>
 #import "OUIExportOptionsController.h"
-#import "OUISheetNavigationController.h"
 #import "OUIExportOptionsView.h"
+#import "OUISheetNavigationController.h"
 #import "OUISyncMenuController.h"
-#import <OmniFileStore/OFSFileManager.h>
 
 RCS_ID("$Id$");
 
@@ -44,16 +50,19 @@ RCS_ID("$Id$");
 
 static NSString * const ProxiesBinding = @"proxies";
 
-@interface OUIDocumentPicker (/*Private*/) <UIActionSheetDelegate, MFMailComposeViewControllerDelegate>
+@interface OUIDocumentPicker (/*Private*/) <UIActionSheetDelegate, MFMailComposeViewControllerDelegate, UITableViewDataSource, UITableViewDelegate>
 - (void)_loadProxies;
 - (void)_setupProxiesBinding;
 - (OUIDocumentProxy *)_makeProxyForURL:(NSURL *)fileURL;
 - (void)_documentProxyTapped:(OUIDocumentProxy *)proxy;
-- (void)_sendEmailWithSubject:(NSString *)subject attachmentName:(NSString *)name data:(NSData *)data fileType:(NSString *)fileType;
+- (void)_sendEmailWithSubject:(NSString *)subject messageBody:(NSString *)messageBody isHTML:(BOOL)isHTML attachmentName:(NSString *)attachmentFileName data:(NSData *)attachmentData fileType:(NSString *)fileType;
 - (void)_deleteWithoutConfirmation;
 - (CAMediaTimingFunction *)_caMediaTimingFunctionForUIViewAnimationCurve:(UIViewAnimationCurve)uiViewAnimationCurve;
 - (void)_animateWithKeyboard:(NSNotification *)notification showing:(BOOL)keyboardIsShowing;
 - (NSURL *)_renameProxy:(OUIDocumentProxy *)proxy toName:(NSString *)name type:(NSString *)documentUTI rescanDocuments:(BOOL)rescanDocuments;
+- (void)_updateFieldsForSelectedProxy;
++ (OFPreference *)_sortPreference;
+- (void)_updateSort;
 @end
 
 @implementation OUIDocumentPicker
@@ -104,7 +113,7 @@ static void _addPushAndFadeAnimations(OUIDocumentPicker *self, BOOL fade, Animat
         _pushAndFadeAnimation(self->_dateLabel, down, fade);
         _pushAndFadeAnimation(self->_favoriteButton, down, fade);
         _pushAndFadeAnimation(self->_exportButton, down, fade);
-        _pushAndFadeAnimation(self->_newDocumentButton, down, fade);
+        _pushAndFadeAnimation(self->_addDocumentButton, down, fade);
         _pushAndFadeAnimation(self->_deleteButton, down, fade);
     } else if (type == AnimateNeighborProxies) {
         OUIDocumentProxy *proxy = self->_previewScrollView.proxyClosestToCenter;
@@ -171,9 +180,10 @@ static void _addPushAndFadeAnimations(OUIDocumentPicker *self, BOOL fade, Animat
     for (NSString *fileName in fileNames) {
         NSString *samplePath = [sampleDocumentsDirectory stringByAppendingPathComponent:fileName];
         NSString *documentPath = [userDocumentsDirectory stringByAppendingPathComponent:fileName];
+        NSString *documentName = [[documentPath lastPathComponent] stringByDeletingPathExtension];
         
-        NSString *localizedTitle = [[NSBundle mainBundle] localizedStringForKey:[[documentPath lastPathComponent] stringByDeletingPathExtension] value:nil table:@"SampleNames"];
-        if (localizedTitle && ![localizedTitle isEqualToString:[[documentPath lastPathComponent] stringByDeletingPathExtension]]) {
+        NSString *localizedTitle = [[NSBundle mainBundle] localizedStringForKey:documentName value:nil table:@"SampleNames"];
+        if (localizedTitle && ![localizedTitle isEqualToString:documentName]) {
             NSString *extension = [documentPath pathExtension];
             documentPath = [userDocumentsDirectory stringByAppendingPathComponent:localizedTitle];
             documentPath = [documentPath stringByAppendingPathExtension:extension];
@@ -310,7 +320,7 @@ static id _commonInit(OUIDocumentPicker *self)
     [_buttonGroupView release];
     [_favoriteButton release];
     [_exportButton release];
-    [_newDocumentButton release];
+    [_addDocumentButton release];
     [_deleteButton release];
     
     [_proxiesBinding invalidate];
@@ -318,7 +328,7 @@ static id _commonInit(OUIDocumentPicker *self)
     [_directory release];
     [_proxies release];
     [_proxyTappedTarget release];
-    [_actionSheetActions release];
+    [_actionSheetInvocations release];
     
     [super dealloc];
 }
@@ -342,7 +352,7 @@ static id _commonInit(OUIDocumentPicker *self)
 @synthesize dateLabel = _dateLabel;
 @synthesize favoriteButton = _favoriteButton;
 @synthesize exportButton = _exportButton;
-@synthesize newDocumentButton = _newDocumentButton;
+@synthesize addDocumentButton = _addDocumentButton;
 @synthesize deleteButton = _deleteButton;
 @synthesize buttonGroupView = _buttonGroupView;
 
@@ -385,7 +395,7 @@ static id _commonInit(OUIDocumentPicker *self)
         proxy = _previewScrollView.firstProxy;
     
     [_previewScrollView setNeedsLayout];
-    [_previewScrollView snapToProxy:proxy animated:animated];
+    [self setSelectedProxy:proxy scrolling:YES animated:animated];
 }
 
 - (void)rescanDocuments;
@@ -402,7 +412,7 @@ static id _commonInit(OUIDocumentPicker *self)
     // At first it should not take up space.
     createdProxy.layoutShouldAdvance = NO;
     [_previewScrollView layoutSubviews];
-    [_previewScrollView snapToProxy:createdProxy animated:NO];
+    [self setSelectedProxy:createdProxy scrolling:YES animated:NO];
 
     OBASSERT(createdProxy.view != nil); // should have had a view assigned.
     createdProxy.view.alpha = 0; // start out transparent
@@ -453,7 +463,48 @@ static id _commonInit(OUIDocumentPicker *self)
 
 - (OUIDocumentProxy *)selectedProxy;
 {
-    return _previewScrollView.proxyClosestToCenter;
+    if (_selectedProxy != nil && ![_proxies containsObject:_selectedProxy]) {
+        OUIDocumentProxy *updatedProxy = [self proxyWithURL:_selectedProxy.url];
+        [_selectedProxy release];
+        _selectedProxy = [updatedProxy retain];
+    }
+
+    return _selectedProxy;
+}
+
+- (void)setSelectedProxy:(OUIDocumentProxy *)proxy;
+{
+    [self setSelectedProxy:proxy scrolling:YES animated:YES];
+}
+
+- (void)setSelectedProxy:(OUIDocumentProxy *)proxy scrolling:(BOOL)shouldScroll animated:(BOOL)animated;
+{
+    if (_selectedProxy != proxy) {
+        [_selectedProxy release];
+        _selectedProxy = [proxy retain];
+    }
+
+    if (_trackPickerView && shouldScroll)
+        [_previewScrollView snapToProxy:proxy animated:animated];
+
+    [self _updateFieldsForSelectedProxy];
+
+    if ([_nonretained_delegate respondsToSelector:@selector(documentPicker:didSelectProxy:)])
+        [_nonretained_delegate documentPicker:self didSelectProxy:self.selectedProxy];
+}
+
+- (OUIDocumentProxyView *)viewForSelectedProxy;
+{
+    OUIDocumentProxy *proxy = self.selectedProxy;
+    if (proxy == nil)
+        return nil;
+
+    if (!_trackPickerView)
+        [_previewScrollView snapToProxy:proxy animated:NO];
+    OUIDocumentProxyView *view = proxy.view;
+
+    OBPOSTCONDITION(view != nil);
+    return view;
 }
 
 - (OUIDocumentProxy *)proxyWithURL:(NSURL *)url;
@@ -462,10 +513,13 @@ static id _commonInit(OUIDocumentPicker *self)
         return nil;
 
     NSString *standardizedPathForURL = [[url path] stringByStandardizingPath];
+    OBASSERT(standardizedPathForURL != nil);
     for (OUIDocumentProxy *proxy in _proxies) {
         NSString *proxyPath = [[[proxy url] path] stringByStandardizingPath];
+        OBASSERT(proxyPath != nil);
+        
         PICKER_DEBUG(@"- Checking proxy: '%@'", proxyPath);
-        if ([proxyPath isEqual:standardizedPathForURL])
+        if ([proxyPath compare:standardizedPathForURL] == NSOrderedSame)
             return proxy;
     }
     PICKER_DEBUG(@"Couldn't find proxy for path: '%@'", standardizedPathForURL);
@@ -546,7 +600,7 @@ static id _commonInit(OUIDocumentPicker *self)
 
 - (void)scrollToProxy:(OUIDocumentProxy *)proxy animated:(BOOL)animated;
 {
-    [_previewScrollView snapToProxy:proxy animated:animated];
+    [self setSelectedProxy:proxy scrolling:YES animated:animated];
 }
 
 - (IBAction)favorite:(id)sender;
@@ -583,16 +637,16 @@ static id _commonInit(OUIDocumentPicker *self)
     }
 
     UIActionSheet *actionSheet = [[[UIActionSheet alloc] initWithTitle:nil delegate:self cancelButtonTitle:nil destructiveButtonTitle:nil otherButtonTitles:nil] autorelease];
-    [_actionSheetActions release];
-    _actionSheetActions = [[NSMutableArray alloc] init];
+    [_actionSheetInvocations release];
+    _actionSheetInvocations = [[NSMutableArray alloc] init];
 
     if (self.documentTypeForNewFiles != nil) {
         [actionSheet addButtonWithTitle:[self documentActionTitle]];
-        [_actionSheetActions addObject:NSStringFromSelector(@selector(newDocument:))];
+        [_actionSheetInvocations addObject:[NSInvocation invocationWithTarget:self action:@selector(newDocument:)]];
     }
 
     [actionSheet addButtonWithTitle:[self duplicateActionTitle]];
-    [_actionSheetActions addObject:NSStringFromSelector(@selector(duplicateDocument:))];
+    [_actionSheetInvocations addObject:[NSInvocation invocationWithTarget:self action:@selector(duplicateDocument:)]];
 
     [actionSheet showFromRect:[sender frame] inView:[sender superview] animated:YES];
     
@@ -675,7 +729,7 @@ static id _commonInit(OUIDocumentPicker *self)
     // Do a non-animated layout. This gets the proxy a view (hidden) assigned to it.
     OBASSERT(duplicateProxy.view == nil); // starts out without a view
     [_previewScrollView layoutSubviews];
-    [_previewScrollView snapToProxy:duplicateProxy animated:NO]; // shouldn't need to animate since it *should* typically be right next to the original. not always if there is a gap in numbering dups, though.
+    [self setSelectedProxy:duplicateProxy scrolling:YES animated:NO]; // shouldn't need to animate since it *should* typically be right next to the original. not always if there is a gap in numbering dups, though.
     OBASSERT(duplicateProxy.view != nil); // should have had a view assigned.
     duplicateProxy.view.alpha = 0; // start out transparent
     
@@ -777,6 +831,171 @@ static id _commonInit(OUIDocumentPicker *self)
     [self revealAndActivateNewDocumentAtURL:[NSURL fileURLWithPath:duplicatePath]];
 }
 
+- (NSString *)editNameForDocumentURL:(NSURL *)url;
+{
+    return [[[url path] lastPathComponent] stringByDeletingPathExtension];
+}
+
+- (NSString *)displayNameForDocumentURL:(NSURL *)url;
+{
+    Class proxyClass = [_nonretained_delegate documentPicker:self proxyClassForURL:url];
+    if (proxyClass == Nil)
+        proxyClass = [OUIDocumentProxy class];
+    return [proxyClass displayNameForURL:url];
+}
+
+- (NSArray *)availableExportTypesForProxy:(OUIDocumentProxy *)proxy;
+{
+    if ([_nonretained_delegate respondsToSelector:@selector(documentPicker:availableExportTypesForProxy:)])
+        return [_nonretained_delegate documentPicker:self availableExportTypesForProxy:proxy];
+
+    NSMutableArray *exportTypes = [NSMutableArray array];
+    BOOL canMakePDF = [_nonretained_delegate respondsToSelector:@selector(documentPicker:PDFDataForProxy:error:)];
+    BOOL canMakePNG = [_nonretained_delegate respondsToSelector:@selector(documentPicker:PNGDataForProxy:error:)];
+    if (canMakePDF)
+        [exportTypes addObject:(NSString *)kUTTypePDF];
+    if (canMakePNG)
+        [exportTypes addObject:(NSString *)kUTTypePNG];
+    return exportTypes;
+}
+
+- (NSArray *)availableImageExportTypesForProxy:(OUIDocumentProxy *)proxy;
+{
+    NSMutableArray *imageExportTypes = [NSMutableArray array];
+    NSArray *exportTypes = [self availableExportTypesForProxy:proxy];
+    for (NSString *exportType in exportTypes) {
+        if (UTTypeConformsTo((CFStringRef)exportType, kUTTypeImage))
+            [imageExportTypes addObject:exportType];
+    }
+    return imageExportTypes;
+}
+
+- (OFFileWrapper *)exportFileWrapperOfType:(NSString *)exportType forProxy:(OUIDocumentProxy *)proxy error:(NSError **)outError;
+{
+    if ([_nonretained_delegate respondsToSelector:@selector(documentPicker:exportFileWrapperOfType:forProxy:error:)])
+        return [_nonretained_delegate documentPicker:self exportFileWrapperOfType:exportType forProxy:proxy error:outError];
+
+    // If the delegate doesn't implement the new file wrapper export API, try the older NSData API
+    NSData *fileData = nil;
+    NSString *pathExtension = nil;
+
+    if (UTTypeConformsTo((CFStringRef)exportType, kUTTypePDF) && [_nonretained_delegate respondsToSelector:@selector(documentPicker:PDFDataForProxy:error:)]) {
+        fileData = [_nonretained_delegate documentPicker:self PDFDataForProxy:proxy error:outError];
+        pathExtension = @"pdf";
+    } else if (UTTypeConformsTo((CFStringRef)exportType, kUTTypePNG) && [_nonretained_delegate respondsToSelector:@selector(documentPicker:PNGDataForProxy:error:)]) {
+        fileData = [_nonretained_delegate documentPicker:self PNGDataForProxy:proxy error:outError];
+        pathExtension = @"png";
+    }
+
+    if (fileData == nil)
+        return nil;
+
+    OFFileWrapper *fileWrapper = [[OFFileWrapper alloc] initRegularFileWithContents:fileData];
+    fileWrapper.preferredFilename = [[proxy name] stringByAppendingPathExtension:pathExtension];
+    return [fileWrapper autorelease];
+}
+
+- (UIImage *)_iconForUTI:(NSString *)fileUTI targetSize:(NSUInteger)targetSize;
+{
+    // UIDocumentInteractionController seems to only return a single icon.
+    CFDictionaryRef utiDecl = UTTypeCopyDeclaration((CFStringRef)fileUTI);
+    if (utiDecl) {
+        // Look for an icon with the specified size.
+        CFArrayRef iconFiles = CFDictionaryGetValue(utiDecl, CFSTR("UTTypeIconFiles"));
+        NSString *sizeString = [NSString stringWithFormat:@"%lu", targetSize]; // This is a little optimistic, but unlikely to fail.
+        for (NSString *iconName in (NSArray *)iconFiles) {
+            if ([iconName rangeOfString:sizeString].location != NSNotFound) {
+                UIImage *image = [UIImage imageNamed:iconName];
+                if (image) {
+                    CFRelease(utiDecl);
+                    return image;
+                }
+            }
+        }
+        CFRelease(utiDecl);
+    }
+    
+    if (UTTypeConformsTo((CFStringRef)fileUTI, kUTTypePDF)) {
+        UIImage *image = [UIImage imageNamed:@"OUIPDF.png"];
+        if (image)
+            return image;
+    }
+    if (UTTypeConformsTo((CFStringRef)fileUTI, kUTTypePNG)) {
+        UIImage *image = [UIImage imageNamed:@"OUIPNG.png"];
+        if (image)
+            return image;
+    }
+    
+    
+    // Might be a system type.
+    UIDocumentInteractionController *documentInteractionController = [[UIDocumentInteractionController alloc] init];
+    documentInteractionController.UTI = fileUTI;
+    if (documentInteractionController.icons.count == 0) {
+        CFStringRef extension = UTTypeCopyPreferredTagWithClass((CFStringRef)fileUTI, kUTTagClassFilenameExtension);
+        if (extension != NULL) {
+            documentInteractionController.name = [@"Untitled" stringByAppendingPathExtension:(NSString *)extension];
+            CFRelease(extension);
+        }
+        if (documentInteractionController.icons.count == 0) {
+            documentInteractionController.UTI = nil;
+            documentInteractionController.name = @"Untitled";
+        }
+    }
+
+    OBASSERT(documentInteractionController.icons.count != 0); // Or we should attach our own default icon
+    UIImage *bestImage = nil;
+    for (UIImage *image in documentInteractionController.icons) {
+        if (CGSizeEqualToSize(image.size, CGSizeMake(targetSize, targetSize))) {
+            bestImage = image; // This image fits our target size
+            break;
+        }
+    }
+
+    if (bestImage == nil)
+        bestImage = [documentInteractionController.icons lastObject];
+
+    [documentInteractionController release];
+
+    if (bestImage != nil)
+        return bestImage;
+    else
+        return [UIImage imageNamed:@"OUIDocument.png"];
+}
+
+- (UIImage *)iconForUTI:(NSString *)fileUTI;
+{
+    UIImage *icon = nil;
+    if ([_nonretained_delegate respondsToSelector:@selector(documentPicker:iconForUTI:)])
+        icon = [_nonretained_delegate documentPicker:self iconForUTI:(CFStringRef)fileUTI];
+    if (icon == nil)
+        icon = [self _iconForUTI:fileUTI targetSize:32];
+    return icon;
+}
+
+- (UIImage *)exportIconForUTI:(NSString *)fileUTI;
+{
+    UIImage *icon = nil;
+    if ([_nonretained_delegate respondsToSelector:@selector(documentPicker:exportIconForUTI:)])
+        icon = [_nonretained_delegate documentPicker:self exportIconForUTI:(CFStringRef)fileUTI];
+    if (icon == nil)
+        icon = [self _iconForUTI:fileUTI targetSize:128];
+    return icon;
+}
+
+- (NSString *)exportLabelForUTI:(NSString *)fileUTI;
+{
+    NSString *customLabel = nil;
+    if ([_nonretained_delegate respondsToSelector:@selector(documentPicker:labelForUTI:)])
+        customLabel = [_nonretained_delegate documentPicker:self labelForUTI:(CFStringRef)fileUTI];
+    if (customLabel != nil)
+        return customLabel;
+    if (UTTypeConformsTo((CFStringRef)fileUTI, kUTTypePDF))
+        return @"PDF";
+    if (UTTypeConformsTo((CFStringRef)fileUTI, kUTTypePNG))
+        return @"PNG";
+    return nil;
+}
+
 // Once the sliding of layout has happened in duplication, fade in the new proxy.
 - (void)_duplicationSlideAnimationDidStop:(NSString *)animationID finished:(NSNumber *)finished context:(void *)context;
 {
@@ -807,10 +1026,10 @@ static id _commonInit(OUIDocumentPicker *self)
                                                 destructiveButtonTitle:[self deleteDocumentTitle]
                                                      otherButtonTitles:nil] autorelease];
 
-    [_actionSheetActions release];
-    _actionSheetActions = [[NSMutableArray alloc] init];
+    [_actionSheetInvocations release];
+    _actionSheetInvocations = [[NSMutableArray alloc] init];
 
-    [_actionSheetActions addObject:NSStringFromSelector(@selector(_deleteWithoutConfirmation))];
+    [_actionSheetInvocations addObject:[NSInvocation invocationWithTarget:self action:@selector(_deleteWithoutConfirmation)]];
 
     [actionSheet showFromRect:[sender frame] inView:[sender superview] animated:YES];
     
@@ -843,12 +1062,12 @@ static id _commonInit(OUIDocumentPicker *self)
         return;
 
     UIActionSheet *actionSheet = [[[UIActionSheet alloc] initWithTitle:nil delegate:self cancelButtonTitle:nil destructiveButtonTitle:nil otherButtonTitles:nil] autorelease];
-    [_actionSheetActions release];
-    _actionSheetActions = [[NSMutableArray alloc] init];
+    [_actionSheetInvocations release];
+    _actionSheetInvocations = [[NSMutableArray alloc] init];
     
     BOOL canExport = [[OFPreferenceWrapper sharedPreferenceWrapper] boolForKey:@"OUIExportEnabled"];
-    BOOL canMakePDF = [_nonretained_delegate respondsToSelector:@selector(documentPicker:PDFDataForProxy:error:)];
-    BOOL canMakePNG = [_nonretained_delegate respondsToSelector:@selector(documentPicker:PNGDataForProxy:error:)];
+    NSArray *availableExportTypes = [self availableExportTypesForProxy:proxy];
+    NSArray *availableImageExportTypes = [self availableImageExportTypesForProxy:proxy];
     BOOL canSendToCameraRoll = [_nonretained_delegate respondsToSelector:@selector(documentPicker:cameraRollImageForProxy:)];
     BOOL canPrint = NO;
     
@@ -861,29 +1080,32 @@ static id _commonInit(OUIDocumentPicker *self)
         // All email options should go here (within the test for whether we can send email)
         // more than one option? Display the 'export options sheet'
         [actionSheet addButtonWithTitle:NSLocalizedStringFromTableInBundle(@"Send via Mail", @"OmniUI", OMNI_BUNDLE, @"Menu option in the document picker view")];
-        [_actionSheetActions addObject:NSStringFromSelector((canMakePDF || canMakePNG) ? @selector(emailDocumentChoice:) : @selector(emailDocument:))];
+        [_actionSheetInvocations addObject:[NSInvocation invocationWithTarget:self action:(availableExportTypes.count > 0 ? @selector(emailDocumentChoice:) : @selector(emailDocument:))]];
     }
     
     if (canExport) {
         [actionSheet addButtonWithTitle:NSLocalizedStringFromTableInBundle(@"Export", @"OmniUI", OMNI_BUNDLE, @"Menu option in the document picker view")];
-        [_actionSheetActions addObject:NSStringFromSelector((canMakePDF || canMakePNG) ? @selector(exportDocumentChoice:) : @selector(exportDocument:))];
+        [_actionSheetInvocations addObject:[NSInvocation invocationWithTarget:self action:(availableExportTypes.count > 0 ? @selector(exportDocumentChoice:) : @selector(exportDocument:))]];
     }
     
-    if (canMakePDF || canMakePNG) {
+    if (availableImageExportTypes.count > 0) {
         [actionSheet addButtonWithTitle:NSLocalizedStringFromTableInBundle(@"Copy as Image", @"OmniUI", OMNI_BUNDLE, @"Menu option in the document picker view")];
-        [_actionSheetActions addObject:NSStringFromSelector(@selector(copyAsImage:))];
+        [_actionSheetInvocations addObject:[NSInvocation invocationWithTarget:self action:@selector(copyAsImage:)]];
     }
     
     if (canSendToCameraRoll) {
         [actionSheet addButtonWithTitle:NSLocalizedStringFromTableInBundle(@"Send to Photos", @"OmniUI", OMNI_BUNDLE, @"Menu option in the document picker view")];
-        [_actionSheetActions addObject:NSStringFromSelector(@selector(sendToCameraRoll:))];
+        [_actionSheetInvocations addObject:[NSInvocation invocationWithTarget:self action:@selector(sendToCameraRoll:)]];
     }
     
     if (canPrint) {
         NSString *printTitle = [self printTitle];
         [actionSheet addButtonWithTitle:printTitle];
-        [_actionSheetActions addObject:NSStringFromSelector(@selector(printDocument:))];
+        [_actionSheetInvocations addObject:[NSInvocation invocationWithTarget:self action:@selector(printDocument:)]];
     }
+
+    if ([_nonretained_delegate respondsToSelector:@selector(documentPicker:addExportActionsToSheet:invocations:)])
+        [_nonretained_delegate documentPicker:self addExportActionsToSheet:actionSheet invocations:_actionSheetInvocations];
 
     [actionSheet showFromRect:[sender frame] inView:[sender superview] animated:YES];
     
@@ -898,56 +1120,96 @@ static id _commonInit(OUIDocumentPicker *self)
         return;
     }
 
-    NSURL *documentURL = [documentProxy url];
-    NSString *documentExtension = [[documentURL path] pathExtension];
-    NSString *documentType = [(NSString *)UTTypeCreatePreferredIdentifierForTag(kUTTagClassFilenameExtension, (CFStringRef)documentExtension, NULL) autorelease];
-    OBASSERT(documentType != nil); // UTI should be registered in the Info.plist under CFBundleDocumentTypes
     NSData *documentData = [documentProxy emailData];
-    NSString *documentFilename = [[documentURL path] lastPathComponent];
+    NSString *documentFilename = [documentProxy emailFilename];
+    NSString *documentType = [OFSFileInfo UTIForFilename:documentFilename];
+    OBASSERT(documentType != nil); // UTI should be registered in the Info.plist under CFBundleDocumentTypes
 
-    [self _sendEmailWithSubject:[documentProxy name] attachmentName:documentFilename data:documentData fileType:documentType];
+    [self _sendEmailWithSubject:[documentProxy name] messageBody:nil isHTML:NO attachmentName:documentFilename data:documentData fileType:documentType];
 }
 
-- (void)emailPDF:(id)sender;
+- (BOOL)_canUseEmailBodyForExportType:(NSString *)exportType;
 {
-    OUIDocumentProxy *documentProxy = _previewScrollView.selectedProxy;
+    return ![_nonretained_delegate respondsToSelector:@selector(documentPicker:canUseEmailBodyForType:)] || [_nonretained_delegate documentPicker:self canUseEmailBodyForType:exportType];
+}
+
+- (void)emailExportType:(NSString *)exportType;
+{
+    OUIDocumentProxy *documentProxy = self.selectedProxy;
     if (!documentProxy) {
         OBASSERT_NOT_REACHED("button should have been disabled");
         return;
     }
     
+    if (OFISNULL(exportType)) {
+        [self emailDocument:nil];
+        return;
+    }
+
     NSError *error = nil;
-    NSData *pdfData = [_nonretained_delegate documentPicker:self PDFDataForProxy:documentProxy error:&error];
-    if (!pdfData) {
+    OFFileWrapper *fileWrapper = [self exportFileWrapperOfType:exportType forProxy:documentProxy error:&error];
+    if (fileWrapper == nil) {
         OUI_PRESENT_ERROR(error);
         return;
     }
     
-    NSString *documentFilename = [[documentProxy.url path] lastPathComponent];
-    NSString *pdfFilename = [[documentFilename stringByDeletingPathExtension] stringByAppendingPathExtension:@"pdf"];
+    if ([fileWrapper isDirectory]) {
+        NSDictionary *childWrappers = [fileWrapper fileWrappers];
+        if ([childWrappers count] == 1) {
+            OFFileWrapper *childWrapper = [childWrappers anyObject];
+            if ([childWrapper isRegularFile]) {
+                // File wrapper with just one file? Let's see if it's HTML which we can send as the message body (rather than as an attachment)
+                NSString *documentType = [OFSFileInfo UTIForFilename:childWrapper.preferredFilename];
+                if (UTTypeConformsTo((CFStringRef)documentType, kUTTypeHTML)) {
+                    if ([self _canUseEmailBodyForExportType:exportType]) {
+                        NSString *messageBody = [[[NSString alloc] initWithData:[childWrapper regularFileContents] encoding:NSUTF8StringEncoding] autorelease];
+                        if (messageBody != nil) {
+                            [self _sendEmailWithSubject:[documentProxy name] messageBody:messageBody isHTML:YES attachmentName:nil data:nil fileType:nil];
+                            return;
+                        }
+                    } else {
+                        // Though we're not sending this as the HTML body, we really only need to attach the HTML itself
+                        childWrapper.preferredFilename = [fileWrapper.preferredFilename stringByAppendingPathExtension:[childWrapper.preferredFilename pathExtension]];
+                        fileWrapper = childWrapper;
+                    }
+                }
+            }
+        }
+    }
 
-    [self _sendEmailWithSubject:[documentProxy name] attachmentName:pdfFilename data:pdfData fileType:(NSString *)kUTTypePDF];
-}
+    NSData *emailData;
+    NSString *emailType;
+    NSString *emailName;
+    if ([fileWrapper isRegularFile]) {
+        emailName = fileWrapper.preferredFilename;
+        emailType = exportType;
+        emailData = [fileWrapper regularFileContents];
 
-- (void)emailPNG:(id)sender;
-{
-    OUIDocumentProxy *documentProxy = _previewScrollView.selectedProxy;
-    if (!documentProxy) {
-        OBASSERT_NOT_REACHED("button should have been disabled");
-        return;
+        NSString *emailType = [OFSFileInfo UTIForFilename:fileWrapper.preferredFilename];
+        if (UTTypeConformsTo((CFStringRef)emailType, kUTTypePlainText)) {
+            // Plain text? Let's send that as the message body
+            if ([self _canUseEmailBodyForExportType:exportType]) {
+                NSString *messageBody = [[[NSString alloc] initWithData:emailData encoding:NSUTF8StringEncoding] autorelease];
+                if (messageBody != nil) {
+                    [self _sendEmailWithSubject:[documentProxy name] messageBody:messageBody isHTML:NO attachmentName:nil data:nil fileType:nil];
+                    return;
+                }
+            }
+        }
+    } else {
+        emailName = [fileWrapper.preferredFilename stringByAppendingPathExtension:@"zip"];
+        emailType = [OFSFileInfo UTIForFilename:emailName];
+        NSString *zipPath = [NSTemporaryDirectory() stringByAppendingPathComponent:emailName];
+        OMNI_POOL_START {
+            if (![OUZipArchive createZipFile:zipPath fromFileWrappers:[NSArray arrayWithObject:fileWrapper] error:&error]) {
+                OUI_PRESENT_ERROR(error);
+                return;
+            }
+        } OMNI_POOL_END;
+        emailData = [NSData dataWithContentsOfMappedFile:zipPath];
     }
     
-    NSError *error = nil;
-    NSData *pngData = [_nonretained_delegate documentPicker:self PNGDataForProxy:documentProxy error:&error];
-    if (!pngData) {
-        OUI_PRESENT_ERROR(error);
-        return;
-    }
-    
-    NSString *documentFilename = [[documentProxy.url path] lastPathComponent];
-    NSString *pngFilename = [[documentFilename stringByDeletingPathExtension] stringByAppendingPathExtension:@"png"];
-    
-    [self _sendEmailWithSubject:[documentProxy name] attachmentName:pngFilename data:pngData fileType:(NSString *)kUTTypePNG];
+    [self _sendEmailWithSubject:[documentProxy name] messageBody:nil isHTML:NO attachmentName:emailName data:emailData fileType:emailType];
 }
 
 - (void)exportDocumentChoice:(id)sender;
@@ -957,7 +1219,7 @@ static id _commonInit(OUIDocumentPicker *self)
 
 - (void)exportDocument:(id)sender;
 {
-    NSLog(@"%s", __FUNCTION__);
+    [OUISyncMenuController displayInSheet];
 }
 
 - (void)emailDocumentChoice:(id)sender;
@@ -976,7 +1238,7 @@ static id _commonInit(OUIDocumentPicker *self)
 
 - (void)printDocument:(id)sender;
 {
-    OUIDocumentProxy *documentProxy = _previewScrollView.selectedProxy;
+    OUIDocumentProxy *documentProxy = self.selectedProxy;
     if (!documentProxy) {
         OBASSERT_NOT_REACHED("button should have been disabled");
         return;
@@ -987,7 +1249,7 @@ static id _commonInit(OUIDocumentPicker *self)
 
 - (void)copyAsImage:(id)sender;
 {
-    OUIDocumentProxy *documentProxy = _previewScrollView.selectedProxy;
+    OUIDocumentProxy *documentProxy = self.selectedProxy;
     if (!documentProxy) {
         OBASSERT_NOT_REACHED("button should have been disabled");
         return;
@@ -1034,7 +1296,7 @@ static id _commonInit(OUIDocumentPicker *self)
 
 - (void)sendToCameraRoll:(id)sender;
 {
-    OUIDocumentProxy *documentProxy = _previewScrollView.selectedProxy;
+    OUIDocumentProxy *documentProxy = self.selectedProxy;
     if (!documentProxy) {
         OBASSERT_NOT_REACHED("button should have been disabled");
         return;
@@ -1058,7 +1320,7 @@ static id _commonInit(OUIDocumentPicker *self)
 
 - (IBAction)editTitle:(id)sender;
 {
-    _editingProxyURL = [[[_previewScrollView selectedProxy] url] retain];
+    _editingProxyURL = [[self.selectedProxy url] retain];
     
     if (!_titleEditingField) {
         _titleEditingField = [[UITextField alloc] initWithFrame:CGRectZero];
@@ -1089,14 +1351,58 @@ static id _commonInit(OUIDocumentPicker *self)
     _editingTitle = YES;
     _previewScrollView.disableLayout = YES;
     _previewScrollView.disableRotationDisplay = YES;
+    
+    OUIDocumentPickerView *pickerView = (OUIDocumentPickerView *)self.view;
+    [pickerView setBottomToolbarHidden:YES animated:YES];
     _previewScrollView.disableScroll = YES;
-
+    
     [_titleEditingField becomeFirstResponder];
     
     [_titleEditingField setHidden:NO];
     [_titleLabel setHidden:YES];
     [_dateLabel setHidden:YES];
     [_buttonGroupView setHidden:YES];
+}
+
+- (IBAction)documentSliderAction:(OUIDocumentSlider *)slider;
+{
+    if ([self editingTitle]) {
+        [[self titleEditingField] resignFirstResponder];
+    }
+    
+    [self.previewScrollView documentSliderAction:slider];
+}
+
+- (IBAction)filterAction:(UIView *)sender;
+{
+    if (![self okayToOpenMenu])
+        return;
+    
+/*
+    if (skipAction)
+        return;
+*/
+    
+    if ([self editingTitle]) {
+        [[self titleEditingField] resignFirstResponder];
+    }
+    
+    if (_filterPopoverController && [_filterPopoverController isPopoverVisible]) {
+        [_filterPopoverController dismissPopoverAnimated:YES];
+        [_filterPopoverController release];
+        _filterPopoverController = nil;
+        return;
+    }
+
+    UITableViewController *table = [[UITableViewController alloc] initWithStyle:UITableViewStyleGrouped];
+    [[table tableView] setDelegate:self];
+    [[table tableView] setDataSource:self];
+    [table setContentSizeForViewInPopover:CGSizeMake(320, 110)];
+    // [table setContentSizeForViewInPopover:[[table tableView] rectForSection:0].size];
+    _filterPopoverController = [[UIPopoverController alloc] initWithContentViewController:table];
+    [table release];
+    
+    [[OUIAppController controller] presentPopover:_filterPopoverController fromRect:[sender frame] inView:[sender superview] permittedArrowDirections:UIPopoverArrowDirectionAny animated:YES];
 }
 
 #pragma mark -
@@ -1129,7 +1435,12 @@ static id _commonInit(OUIDocumentPicker *self)
     if (!newName || [newName length] == 0) {
         _editingTitle = NO;
         _previewScrollView.disableRotationDisplay = NO;
+        
+        OUIDocumentPickerView *pickerView = (OUIDocumentPickerView *)self.view;
+        [pickerView setBottomToolbarHidden:NO animated:YES];
+        
         _previewScrollView.disableScroll = NO;
+        
         return;
     }
     
@@ -1137,8 +1448,7 @@ static id _commonInit(OUIDocumentPicker *self)
     NSURL *currentURL = [[_editingProxyURL copy] autorelease];
     
     if (![newName isEqualToString:[currentProxy name]]) {
-        NSString *fileExtension = [[currentURL absoluteString] pathExtension];
-        NSString *uti = [(NSString *)UTTypeCreatePreferredIdentifierForTag(kUTTagClassFilenameExtension, (CFStringRef)fileExtension, NULL) autorelease];
+        NSString *uti = [OFSFileInfo UTIForURL:currentURL];
         OBASSERT(uti);
         
         NSURL *newProxyURL = [self _renameProxy:currentProxy toName:newName type:uti rescanDocuments:NO];
@@ -1158,6 +1468,9 @@ static id _commonInit(OUIDocumentPicker *self)
     
     _editingTitle = NO;
     _previewScrollView.disableRotationDisplay = NO;
+    
+    OUIDocumentPickerView *pickerView = (OUIDocumentPickerView *)self.view;
+    [pickerView setBottomToolbarHidden:NO animated:YES];
     _previewScrollView.disableScroll = NO;
     
     if (!_keyboardIsShowing) {
@@ -1230,12 +1543,6 @@ static id _commonInit(OUIDocumentPicker *self)
     [self _animateWithKeyboard:notification showing:NO];
 }
 
-- (void)_snapToProxy:/*(OUIDocumentProxy *)aProxy*/ (NSURL *)aProxyURL;
-{
-//    [_previewScrollView snapToProxy:aProxy animated:NO];
-    [self rescanDocumentsScrollingToURL:aProxyURL animated:NO];
-}
-
 - (void)keyboardDidHide:(NSNotification *)notification;
 {
     _keyboardIsShowing = NO;
@@ -1269,6 +1576,8 @@ static id _commonInit(OUIDocumentPicker *self)
     _previewScrollView.bottomGap = CGRectGetHeight(viewBounds) - CGRectGetHeight(_previewScrollView.frame);
     _previewScrollView.frame = viewBounds;
     
+    [self _updateSort];
+
     if (_directory) {
         [self _setupProxiesBinding];
         [self _loadProxies];
@@ -1297,8 +1606,8 @@ static id _commonInit(OUIDocumentPicker *self)
     [_exportButton release];
     _exportButton = nil;
     
-    [_newDocumentButton release];
-    _newDocumentButton = nil;
+    [_addDocumentButton release];
+    _addDocumentButton = nil;
     
     [_deleteButton release];
     _deleteButton = nil;
@@ -1323,7 +1632,7 @@ static id _commonInit(OUIDocumentPicker *self)
     if (NSClassFromString(@"UIPrintInteractionController") != nil)
         [[UIPrintInteractionController sharedPrintController] dismissAnimated:NO];
     
-    _selectedProxyBeforeOrientationChange = [[_previewScrollView selectedProxy] retain];
+    _trackPickerView = NO;
     [_previewScrollView willRotate];
     
     if (_nonretainedActionSheet) {
@@ -1335,13 +1644,9 @@ static id _commonInit(OUIDocumentPicker *self)
 
 - (void)didRotateFromInterfaceOrientation:(UIInterfaceOrientation)fromInterfaceOrientation;
 {
-    if (_selectedProxyBeforeOrientationChange) {
-        [_previewScrollView snapToProxy:_selectedProxyBeforeOrientationChange animated:NO];
-        [_selectedProxyBeforeOrientationChange release];
-        _selectedProxyBeforeOrientationChange = nil;
-    }
-    
+    [_previewScrollView snapToProxy:self.selectedProxy animated:NO];
     [_previewScrollView didRotate];
+    _trackPickerView = YES;
 
     [super didRotateFromInterfaceOrientation:fromInterfaceOrientation];
 }
@@ -1353,8 +1658,10 @@ static id _commonInit(OUIDocumentPicker *self)
 {
     // -1 means cancel (clicked out) if you don't have a cancel item
     if (buttonIndex >= 0 && buttonIndex != [actionSheet cancelButtonIndex]) {
-        NSString *actionString = [_actionSheetActions objectAtIndex:buttonIndex];
-        [self performSelector:NSSelectorFromString(actionString) withObject:actionSheet];
+        NSInvocation *action = [_actionSheetInvocations objectAtIndex:buttonIndex];
+        if ([[action methodSignature] numberOfArguments] > 2)
+            [action setArgument:&self atIndex:2];
+        [action invoke];
     }
     
     // cleanup done in dismiss below.
@@ -1362,8 +1669,8 @@ static id _commonInit(OUIDocumentPicker *self)
 
 - (void)actionSheet:(UIActionSheet *)actionSheet didDismissWithButtonIndex:(NSInteger)buttonIndex;  // after animation
 {
-    [_actionSheetActions release];
-    _actionSheetActions = nil;
+    [_actionSheetInvocations release];
+    _actionSheetInvocations = nil;
     
     _nonretainedActionSheet = nil;
 }
@@ -1377,27 +1684,12 @@ static id _commonInit(OUIDocumentPicker *self)
 }
 
 #pragma mark -
-#pragma mark OUIDocumentPickerViewDelegate
+#pragma mark OUIDocumentPickerScrollViewDelegate
 
-- (void)documentPickerView:(OUIDocumentPickerView *)pickerView didSelectProxy:(OUIDocumentProxy *)proxy;
+- (void)documentPickerView:(OUIDocumentPickerScrollView *)pickerView didSelectProxy:(OUIDocumentProxy *)proxy;
 {
-    if (!proxy) {
-        _titleLabel.hidden = YES;
-        _dateLabel.hidden = YES;
-    } else {
-        _titleLabel.hidden = NO;
-        _dateLabel.hidden = NO;
-    }
-    
-    [_titleLabel setTitle:[proxy name] forState:UIControlStateNormal];
-    _dateLabel.text = [proxy dateString];
-
-    _exportButton.enabled = (proxy != nil);
-    _favoriteButton.enabled = (proxy != nil);
-    _deleteButton.enabled = [self canEditProxy:proxy];
-
-    if ([_nonretained_delegate respondsToSelector:@selector(documentPicker:didSelectProxy:)])
-        [_nonretained_delegate documentPicker:self didSelectProxy:proxy];
+    if (_trackPickerView)
+        [self setSelectedProxy:proxy scrolling:NO animated:NO];
 }
 
 #pragma mark -
@@ -1418,6 +1710,8 @@ static id _commonInit(OUIDocumentPicker *self)
 
 - (void)willResignInnerToolbarController:(OUIToolbarViewController *)toolbarViewController animated:(BOOL)animated;
 {
+    _trackPickerView = NO;
+
     if (animated) {
         _addPushAndFadeAnimations(self, YES/*fade*/, AnimateNeighborProxies);
 
@@ -1446,7 +1740,7 @@ static id _commonInit(OUIDocumentPicker *self)
 - (void)willBecomeInnerToolbarController:(OUIToolbarViewController *)toolbarViewController animated:(BOOL)animated;
 {
     // Necessary if the device has been rotated while we weren't on screen.
-    [self.previewScrollView snapToProxy:self.previewScrollView.proxyClosestToCenter animated:NO];
+    [_previewScrollView snapToProxy:self.selectedProxy animated:NO];
     [self.view layoutIfNeeded];
 
     // The set of proxies might change so we can't just do right left here for removing old animations.
@@ -1469,6 +1763,7 @@ static id _commonInit(OUIDocumentPicker *self)
     // would be better if this were only called after activating the app
     [self.view.layer recursivelyRemoveAnimationForKey:@"positionAdjust"];
 
+    _trackPickerView = YES;
 }
 
 - (void)didBecomeInnerToolbarController:(OUIToolbarViewController *)toolbarViewController;
@@ -1529,6 +1824,7 @@ static id _commonInit(OUIDocumentPicker *self)
     NSLog(@"%s %@", __PRETTY_FUNCTION__, NSStringFromSelector(action));
     return NO;
 }
+
 - (BOOL)documentInteractionController:(UIDocumentInteractionController *)controller performAction:(SEL)action;
 {
     NSLog(@"%s %@", __PRETTY_FUNCTION__, NSStringFromSelector(action));
@@ -1536,6 +1832,66 @@ static id _commonInit(OUIDocumentPicker *self)
     if (action == @selector(copy:))
         return YES;
     return NO;
+}
+
+#pragma mark -
+#pragma mark UITableViewDataSource protocol
+
+- (NSInteger)numberOfSectionsInTableView:(UITableView *)tableView;
+{
+    return 1;
+}
+
+- (NSInteger)tableView:(UITableView *)aTableView numberOfRowsInSection:(NSInteger)section
+{
+    return 2;
+}
+
+- (UITableViewCell *)tableView:(UITableView *)tableView cellForRowAtIndexPath:(NSIndexPath *)indexPath {
+    
+    static NSString *CellIdentifier = @"FilterCellIdentifier";
+    
+    // Dequeue or create a cell of the appropriate type.
+    UITableViewCell *cell = [tableView dequeueReusableCellWithIdentifier:CellIdentifier];
+    if (cell == nil)
+        cell = [[[UITableViewCell alloc] initWithStyle:UITableViewCellStyleDefault reuseIdentifier:CellIdentifier] autorelease];
+    
+    cell.selectionStyle = UITableViewCellSelectionStyleNone;
+    cell.textLabel.text = (indexPath.row == OUIDocumentProxySortByName) ? NSLocalizedStringFromTableInBundle(@"Sort by title", @"OmniUI", OMNI_BUNDLE, @"sort by title") : NSLocalizedStringFromTableInBundle(@"Sort by date", @"OmniUI", OMNI_BUNDLE, @"sort by date");
+    cell.imageView.image = (indexPath.row == OUIDocumentProxySortByName) ? [UIImage imageNamed:@"OUIDocumentSortByName.png"] : [UIImage imageNamed:@"OUIDocumentSortByDate.png"];
+    
+    return cell;
+}
+
+- (void)tableView:(UITableView *)tableView willDisplayCell:(UITableViewCell *)cell forRowAtIndexPath:(NSIndexPath *)indexPath
+{
+    OUIDocumentProxySort sortPref = [[[self class] _sortPreference] enumeratedValue];
+    if ((indexPath.row == 0) == (sortPref == 0))  // or indexPath.row == sortPref
+        cell.accessoryType = UITableViewCellAccessoryCheckmark;
+    else
+        cell.accessoryType = UITableViewCellAccessoryNone;        
+}
+
+#pragma mark -
+#pragma mark Table view delegate
+
+- (void)tableView:(UITableView *)aTableView didSelectRowAtIndexPath:(NSIndexPath *)indexPath;
+{
+    OFPreference *sortPreference = [[self class] _sortPreference];
+    [sortPreference setEnumeratedValue:indexPath.row];
+    OUIDocumentProxy *proxy = [self selectedProxy];
+    [self _updateSort];
+    [self scrollToProxy:proxy animated:NO];        
+    
+    UITableViewCell *cell = [aTableView cellForRowAtIndexPath:indexPath];
+    cell.accessoryType = UITableViewCellAccessoryCheckmark;
+    
+    NSIndexPath *otherPath = (indexPath.row == 0) ? [NSIndexPath indexPathForRow:1 inSection:indexPath.section] : [NSIndexPath indexPathForRow:0 inSection:indexPath.section];
+    [[aTableView cellForRowAtIndexPath:otherPath] setAccessoryType:UITableViewCellAccessoryNone];
+    
+    [_filterPopoverController dismissPopoverAnimated:YES];
+    [_filterPopoverController release];
+    _filterPopoverController = nil;
 }
 
 #pragma mark -
@@ -1584,8 +1940,7 @@ static id _commonInit(OUIDocumentPicker *self)
 #endif
             
             for (NSString *fileName in fileNames) {
-                NSString *fileExtension = [fileName pathExtension];
-                NSString *uti = [(NSString *)UTTypeCreatePreferredIdentifierForTag(kUTTagClassFilenameExtension, (CFStringRef)fileExtension, NULL) autorelease];
+                NSString *uti = [OFSFileInfo UTIForFilename:fileName];
                 NSString *filePath = [scanDirectory stringByAppendingPathComponent:fileName];
 
                 if (![[OUIAppController controller] canViewFileTypeWithIdentifier:uti]) {
@@ -1660,7 +2015,7 @@ static id _commonInit(OUIDocumentPicker *self)
         return;
     
     _proxiesBinding = [[OFSetBinding alloc] initWithSourcePoint:OFBindingPointMake(self, ProxiesBinding)
-                                               destinationPoint:OFBindingPointMake(_previewScrollView, OUIDocumentPickerViewProxiesBinding)];
+                                               destinationPoint:OFBindingPointMake(_previewScrollView, OUIDocumentPickerScrollViewProxiesBinding)];
     [_proxiesBinding propagateCurrentValue];
 }
 
@@ -1669,28 +2024,28 @@ static id _commonInit(OUIDocumentPicker *self)
     // Tapping the selected proxy opens it or commits title edit. Otherwise, we want to scroll it into view.
     if (_titleEditingField && !_titleEditingField.hidden)
         [_titleEditingField resignFirstResponder];
-    else if (proxy == _previewScrollView.selectedProxy)
+    else if (proxy == self.selectedProxy)
         [_proxyTappedTarget performSelector:_proxyTappedAction withObject:proxy];
     else
-        [_previewScrollView snapToProxy:proxy animated:YES];
+        self.selectedProxy = proxy;
 }
 
-- (void)_sendEmailWithSubject:(NSString *)subject attachmentName:(NSString *)attachmentFileName data:(NSData *)attachmentData fileType:(NSString *)fileType;
+- (void)_sendEmailWithSubject:(NSString *)subject messageBody:(NSString *)messageBody isHTML:(BOOL)isHTML attachmentName:(NSString *)attachmentFileName data:(NSData *)attachmentData fileType:(NSString *)fileType;
 {
-    NSString *mimeType = [(NSString *)UTTypeCopyPreferredTagWithClass((CFStringRef)fileType, kUTTagClassMIMEType) autorelease];
-    OBASSERT(mimeType != nil); // The UTI's mime type should be registered in the Info.plist under UTExportedTypeDeclarations:UTTypeTagSpecification
-    if (mimeType == nil)
-        mimeType = @"application/octet-stream";
-#ifdef DEBUG_kc
-    NSLog(@"Sending email with %@ attachment (%@)", mimeType, subject);
-#endif
-    
-    
     MFMailComposeViewController *controller = [[MFMailComposeViewController alloc] init];
     controller.navigationBar.barStyle = UIBarStyleBlack;
     controller.mailComposeDelegate = self;
     [controller setSubject:subject];
-    [controller addAttachmentData:attachmentData mimeType:mimeType fileName:attachmentFileName];
+    if (messageBody != nil)
+        [controller setMessageBody:messageBody isHTML:isHTML];
+    if (attachmentData != nil) {
+        NSString *mimeType = [(NSString *)UTTypeCopyPreferredTagWithClass((CFStringRef)fileType, kUTTagClassMIMEType) autorelease];
+        OBASSERT(mimeType != nil); // The UTI's mime type should be registered in the Info.plist under UTExportedTypeDeclarations:UTTypeTagSpecification
+        if (mimeType == nil)
+            mimeType = @"application/octet-stream"; 
+
+        [controller addAttachmentData:attachmentData mimeType:mimeType fileName:attachmentFileName];
+    }
     [[[OUIAppController controller] topViewController] presentModalViewController:controller animated:YES];
     [controller autorelease];
 }
@@ -1703,7 +2058,7 @@ typedef struct {
 - (void)_deleteWithoutConfirmation;
 {
     NSError *error = nil;
-    OUIDocumentProxy *deleteProxy = _previewScrollView.selectedProxy;
+    OUIDocumentProxy *deleteProxy = self.selectedProxy;
     OUIDocumentProxy *nextProxy = [_previewScrollView proxyToRightOfProxy:deleteProxy];
     if (nextProxy == nil)
         nextProxy = [_previewScrollView proxyToLeftOfProxy:deleteProxy];
@@ -1842,7 +2197,10 @@ typedef struct {
             CGFloat newShadowWidth = shadowLayerBounds.size.width;
             
             CGPoint endPosition = CGPointZero;
-            if (edge == 0 /* Bottom */ || edge == 1 /* Top */) {
+            if (edge == 0 /* Bottom */) {
+                endPosition = CGPointMake(shadowLayer.position.x - deltaX/2, shadowLayer.position.y - deltaY);
+                newShadowWidth *= proportion;
+            } else if (edge == 1 /* Top */) {
                 endPosition = CGPointMake(shadowLayer.position.x - deltaX/2, shadowLayer.position.y);
                 newShadowWidth *= proportion;
             } else if (edge == 2 /* Left */) {
@@ -1931,7 +2289,7 @@ typedef struct {
     
     
     [self willChangeValueForKey:ProxiesBinding];
-    [_proxies release];
+    [_proxies autorelease];
     _proxies = [[NSSet alloc] initWithSet:_proxies];
     [self didChangeValueForKey:ProxiesBinding];
 
@@ -1948,5 +2306,48 @@ typedef struct {
     return newURL;
 }
 
-@end
+- (void)_updateFieldsForSelectedProxy;
+{
+    if (_titleLabel == nil && _dateLabel == nil)
+        return; // Our fields aren't hooked up yet, so we can't set their values yet
 
+    OUIDocumentProxy *proxy = self.selectedProxy;
+    if (proxy == _nonretainedDisplayedProxy)
+        return; // We've already displayed values for this proxy
+
+    _nonretainedDisplayedProxy = proxy;
+    if (proxy == nil) {
+        _titleLabel.hidden = YES;
+        _dateLabel.hidden = YES;
+    } else {
+        _titleLabel.hidden = NO;
+        _dateLabel.hidden = NO;
+    }
+    
+    [_titleLabel setTitle:[proxy name] forState:UIControlStateNormal];
+    _dateLabel.text = [proxy dateString];
+
+    _exportButton.enabled = (proxy != nil);
+    _favoriteButton.enabled = (proxy != nil);
+    _deleteButton.enabled = [self canEditProxy:proxy];
+}
+
++ (OFPreference *)_sortPreference;
+{
+    static OFPreference *SortPreference = nil;
+    if (SortPreference == nil) {
+        OFEnumNameTable *enumeration = [[OFEnumNameTable alloc] initWithDefaultEnumValue:OUIDocumentProxySortByDate];
+        [enumeration setName:@"name" forEnumValue:OUIDocumentProxySortByName];
+        [enumeration setName:@"date" forEnumValue:OUIDocumentProxySortByDate];
+        SortPreference = [[OFPreference preferenceForKey:@"OUIDocumentPickerSortKey" enumeration:enumeration] retain];
+        [enumeration release];
+    }
+    return SortPreference;
+}
+
+- (void)_updateSort;
+{
+    self.previewScrollView.proxySort = [[[self class] _sortPreference] enumeratedValue];
+}
+
+@end

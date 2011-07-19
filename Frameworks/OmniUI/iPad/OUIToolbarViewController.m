@@ -1,4 +1,4 @@
-// Copyright 2010 The Omni Group.  All rights reserved.
+// Copyright 2010-2011 The Omni Group. All rights reserved.
 //
 // This software may only be used and reproduced according to the
 // terms in the file OmniSourceLicense.html, which should be
@@ -6,6 +6,8 @@
 // <http://www.omnigroup.com/developer/sourcecode/sourcelicense/>.
 
 #import <OmniUI/OUIToolbarViewController.h>
+
+#import "OUIParameters.h"
 
 #import <OmniUI/OUIAppController.h>
 #import <OmniUI/UIView-OUIExtensions.h>
@@ -43,7 +45,13 @@ RCS_ID("$Id$");
     return view.toolbar;
 }
 
+@synthesize lastKeyboardHeight = _lastKeyboardHeight;
 @synthesize innerViewController = _innerViewController;
+
+- (CGFloat)interItemPadding
+{
+    return kOUIToolbarIteritemPadding;
+}
 
 static void _setInnerViewController(OUIToolbarViewController *self, UIViewController *viewController, BOOL forAnimation)
 {
@@ -164,8 +172,9 @@ typedef struct {
 {
     OBPRECONDITION(viewController);
     OBPRECONDITION(_innerViewController != viewController);
+    OBPRECONDITION(fromView != nil);
+    OBPRECONDITION(toView != nil);
 
-    
     TOOLBAR_DEBUG(@"Animating from %@ to %@", _innerViewController, viewController);
     TOOLBAR_DEBUG(@"  fromView %@", [fromView shortDescription]);
     TOOLBAR_DEBUG(@"  toView %@", [toView shortDescription]);
@@ -197,6 +206,10 @@ typedef struct {
     UIView *view = self.view;
     CGRect sourcePreviewFrame = [fromView convertRect:fromViewRect toView:view];
     CGRect targetPreviewFrame = [toView convertRect:toViewRect toView:view];
+    if (targetPreviewFrame.size.width > sourcePreviewFrame.size.width)
+        targetPreviewFrame.size.height = targetPreviewFrame.size.width * (sourcePreviewFrame.size.height / sourcePreviewFrame.size.width);
+    else
+        sourcePreviewFrame.size.height = sourcePreviewFrame.size.width * (targetPreviewFrame.size.height / targetPreviewFrame.size.width);
     
     // If we are zoomed way in, this animation isn't going to look great and we'll end up crashing trying to build a static image anyway.
     BOOL zoomed;
@@ -267,6 +280,9 @@ typedef struct {
     ctx->animatingView = animatingView; // Taking reference from init above
     ctx->toViewController = [viewController retain];
     ctx->fromView = [fromView retain];
+    
+    // Make sure that if any views in the old inner view controller have been sent -setNeedsDisplay that they won't start trying to fill their layers as the CoreAnimation loop starts running. They are dead!
+    [_innerViewController.view removeFromSuperview];
     
     [UIView beginAnimations:@"inner view controller switch" context:ctx];
     if (animationDuration > 0) // setting to zero will turn off the animation
@@ -363,6 +379,7 @@ NSString * const OUIToolbarViewControllerResizedForKeyboard = @"OUIToolbarViewCo
     
     // The keyboard will come up out of the bottom. Trim our height so that our max-y avoids it.
     CGFloat avoidedBottomHeight = CGRectGetMaxY(backgroundView.bounds) - CGRectGetMinY(keyboardRectInBounds);
+    _lastKeyboardHeight = avoidedBottomHeight;
     
 #ifdef OMNI_ASSERTIONS_ON
 //    {
@@ -393,13 +410,19 @@ NSString * const OUIToolbarViewControllerResizedForKeyboard = @"OUIToolbarViewCo
 
 - (void)keyboardWillHide:(NSNotification *)note;
 {
+    OUIToolbarViewControllerBackgroundView *backgroundView = (OUIToolbarViewControllerBackgroundView *)self.view;
+
     // Documentation, mail or other modal view atop us -- the keyboard isn't for us. This has an implicit assumption that the keyboard will go away before the modal view controller.
-    if (self.modalViewController)
+    // Still, if the keyboard is gone, we need to make clear our avoidance.
+    if (self.modalViewController) {
+        OUIWithoutAnimating(^{
+            backgroundView.avoidedBottomHeight = 0;
+            [backgroundView layoutIfNeeded];
+        });
         return;
+    }
 
     // Remove the restriction on the content height
-    OUIToolbarViewControllerBackgroundView *backgroundView = (OUIToolbarViewControllerBackgroundView *)self.view;
-    
     [UIView beginAnimations:@"done avoiding keyboard" context:NULL];
     {
         // Match the keyboard animation time and curve. Also, starting from the current position is very important. If we don't and we are jumping between two editable controls, our view size may bounce.
@@ -435,14 +458,14 @@ NSString * const OUIToolbarViewControllerResizedForKeyboard = @"OUIToolbarViewCo
     static const CGFloat kStartingSize = 200; // whatever -- just something so we can lay stuff out to start
     
     OUIToolbarViewControllerBackgroundView *view = [[OUIToolbarViewControllerBackgroundView alloc] initWithFrame:CGRectMake(0, 0, kStartingSize, kStartingSize)];
-    
+    [self setView:view]; // Have to do this before calling down into code that might as for our view
+
     // If there was a low memory warning, we might actually be getting called for the second time.
     if (_innerViewController) {
         [self _prepareViewControllerForContainment:_innerViewController hidden:NO];
         [view.toolbar setItems:_innerViewController.toolbarItems animated:NO];
     }
 
-    [self setView:view];
     [view release];
 }
 
@@ -461,6 +484,7 @@ NSString * const OUIToolbarViewControllerResizedForKeyboard = @"OUIToolbarViewCo
 {
     [super didRotateFromInterfaceOrientation:fromInterfaceOrientation];
     [_innerViewController didRotateFromInterfaceOrientation:fromInterfaceOrientation];
+    [[OUIAppController controller] didRotateFromInterfaceOrientation:fromInterfaceOrientation];
 }
 
 #pragma mark -
