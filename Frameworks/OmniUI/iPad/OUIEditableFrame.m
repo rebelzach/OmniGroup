@@ -730,7 +730,14 @@ static struct typographicPosition getTypographicPosition(CFArrayRef lines, NSUIn
 {
     struct typographicPosition result = {0};
     
-    CFIndex lineCount = CFArrayGetCount(lines);
+    //RWS quickfix for nil lines
+    CFIndex lineCount;
+    if (lines) {
+      lineCount = CFArrayGetCount(lines);
+    } else {
+      lineCount = 0;
+    }
+    
     CFIndex posIndex_s = (CFIndex)posIndex;
     CFIndex adjustedIndex;
     
@@ -1725,11 +1732,12 @@ static BOOL _recognizerTouchedView(UIGestureRecognizer *recognizer, UIView *view
             [self addSubview:_cursorOverlay];
             [_cursorOverlay release];
             _cursorOverlay.foregroundColor = _insertionPointSelectionColor;
-            
-            [_cursorOverlay startBlinking];
+            // RWS set the default to not visible
+            //[_cursorOverlay startBlinking];
+            [_cursorOverlay setHidden:YES];
         } else {
             [_cursorOverlay setCursorFrame:caretRect];
-            if (_cursorOverlay.hidden) {
+          	if (_cursorOverlay.hidden && [self isUserInteractionEnabled] == YES) { //RWS Cursor should only show if we can interact with it
                 _cursorOverlay.hidden = NO;
                 [_cursorOverlay startBlinking];
             }
@@ -1914,6 +1922,10 @@ static BOOL _recognizerTouchedView(UIGestureRecognizer *recognizer, UIView *view
 
 - (BOOL)becomeFirstResponder
 {
+	//RWS A big no way if interaction not enabled
+	if (![self isUserInteractionEnabled]) {
+		return NO; 
+	}
     DEBUG_EDITING(@">> become first responder");
     BOOL didBecomeFirstResponder = [super becomeFirstResponder];
     
@@ -1952,6 +1964,9 @@ static BOOL _recognizerTouchedView(UIGestureRecognizer *recognizer, UIView *view
     }
     
     if (didBecomeFirstResponder) {
+    	//RWS cursor fix
+        [_cursorOverlay setHidden:NO];
+        [_cursorOverlay startBlinking];
         focusRecognizer.enabled = NO;
         for(int i = 0; i < EF_NUM_ACTION_RECOGNIZERS; i++)
             actionRecognizers[i].enabled = YES;
@@ -1991,6 +2006,10 @@ static BOOL _recognizerTouchedView(UIGestureRecognizer *recognizer, UIView *view
     }
 
     [self endEditing];
+    
+    //RWS Cursor fix
+	[_cursorOverlay stopBlinking];
+	[_cursorOverlay setHidden:YES];
     
     DEBUG_EDITING(@"<< resign first responder");
     return YES;
